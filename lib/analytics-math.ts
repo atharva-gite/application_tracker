@@ -67,3 +67,52 @@ export function isAllowedStatusTransition(
     (APPLICATION_STATUSES as readonly string[]).includes(to)
   );
 }
+
+const INTERVIEW_ADVANCE_FROM: ApplicationStatus[] = [
+  "SAVED",
+  "APPLIED",
+  "ASSESSMENT",
+];
+
+export function shouldAdvanceToInterview(status: ApplicationStatus) {
+  return INTERVIEW_ADVANCE_FROM.includes(status);
+}
+
+export function applicationReachedInterview(input: {
+  status: ApplicationStatus;
+  hasInterview: boolean;
+}) {
+  return (
+    input.hasInterview ||
+    input.status === "INTERVIEW" ||
+    input.status === "OFFER"
+  );
+}
+
+export function summarizeSources(
+  rows: Array<{
+    source: string | null;
+    status: ApplicationStatus;
+    hasInterview: boolean;
+  }>,
+) {
+  const totals = new Map<
+    string,
+    { source: string; count: number; interviews: number }
+  >();
+
+  for (const row of rows) {
+    const source = row.source?.trim() ? row.source : "Unspecified";
+    const current = totals.get(source) ?? { source, count: 0, interviews: 0 };
+    current.count += 1;
+    if (applicationReachedInterview(row)) {
+      current.interviews += 1;
+    }
+    totals.set(source, current);
+  }
+
+  return [...totals.values()].sort(
+    (left, right) =>
+      right.interviews - left.interviews || right.count - left.count,
+  );
+}

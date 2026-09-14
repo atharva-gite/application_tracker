@@ -16,9 +16,9 @@ export default async function LoginPage({
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
-      <p className="mt-1 text-sm text-stone-600">
-        Log in to continue managing your applications.
+      <h1 className="font-display text-3xl tracking-tight">Welcome back</h1>
+      <p className="mt-2 text-sm text-stone-600">
+        Log in to pick up your search.
       </p>
       {params.reset ? (
         <p className="mt-4 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">

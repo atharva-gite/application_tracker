@@ -12,8 +12,92 @@ const applicationInclude = {
   company: true,
 } satisfies Prisma.ApplicationInclude;
 
+const listInclude = {
+  company: true,
+  statusHistory: {
+    orderBy: { changedAt: "desc" as const },
+    take: 1,
+    select: { changedAt: true },
+  },
+  notes: {
+    orderBy: { updatedAt: "desc" as const },
+    take: 1,
+    select: { createdAt: true, updatedAt: true },
+  },
+  interviews: {
+    orderBy: { updatedAt: "desc" as const },
+    take: 1,
+    select: { createdAt: true, updatedAt: true },
+  },
+  followUps: {
+    orderBy: { createdAt: "desc" as const },
+    take: 1,
+    select: { createdAt: true, completedAt: true },
+  },
+} satisfies Prisma.ApplicationInclude;
+
+function localDateOnly(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function addLocalDays(days: number, now = new Date()) {
+  return localDateOnly(
+    new Date(now.getFullYear(), now.getMonth(), now.getDate() + days),
+  );
+}
+
+function listDeadline(
+  query: ApplicationListQuery,
+): Prisma.ApplicationWhereInput["deadline"] {
+  if (query.due === "none") {
+    return null;
+  }
+
+  const today = toDateOnly(localDateOnly());
+  const tomorrow = toDateOnly(addLocalDays(1));
+  const filter: Prisma.DateTimeFilter = {};
+
+  if (query.due === "overdue") {
+    filter.lt = today;
+  } else if (query.due === "today") {
+    filter.equals = today;
+  } else if (query.due === "tomorrow") {
+    filter.equals = tomorrow;
+  } else if (query.due === "upcoming") {
+    filter.gt = tomorrow;
+  }
+  if (query.deadlineFrom) {
+    filter.gte = toDateOnly(query.deadlineFrom);
+  }
+  if (query.deadlineTo) {
+    filter.lte = toDateOnly(query.deadlineTo);
+  }
+
+  return Object.keys(filter).length > 0 ? filter : undefined;
+}
+
+function listOrderBy(
+  sort: ApplicationListQuery["sort"],
+  order: NonNullable<ApplicationListQuery["order"]>,
+): Prisma.ApplicationOrderByWithRelationInput {
+  if (sort === "lastActivity" || sort === "updatedAt" || !sort) {
+    return { updatedAt: order };
+  }
+  if (sort === "company") {
+    return { company: { name: order } };
+  }
+  if (sort === "deadline") {
+    return { deadline: { sort: order, nulls: "last" } };
+  }
+  return { [sort]: order };
+}
+
 function listWhere(userId: string, query: ApplicationListQuery): Prisma.ApplicationWhereInput {
   const archived = query.archived ?? "false";
+  const deadline = listDeadline(query);
   return {
     userId,
     ...(archived === "false" ? { archivedAt: null } : {}),
@@ -26,14 +110,7 @@ function listWhere(userId: string, query: ApplicationListQuery): Prisma.Applicat
     ...(query.source
       ? { source: { contains: query.source, mode: "insensitive" } }
       : {}),
-    ...(query.deadlineFrom || query.deadlineTo
-      ? {
-          deadline: {
-            ...(query.deadlineFrom ? { gte: toDateOnly(query.deadlineFrom) } : {}),
-            ...(query.deadlineTo ? { lte: toDateOnly(query.deadlineTo) } : {}),
-          },
-        }
-      : {}),
+    ...(deadline !== undefined ? { deadline } : {}),
     ...(query.appliedFrom || query.appliedTo
       ? {
           applicationDate: {
@@ -65,16 +142,12 @@ export const applicationRepository = {
   async list(userId: string, query: ApplicationListQuery) {
     const where = listWhere(userId, query);
     const skip = (query.page - 1) * query.pageSize;
-    const sort = query.sort ?? "updatedAt";
-    const order = query.order ?? "desc";
-    const orderBy: Prisma.ApplicationOrderByWithRelationInput = {
-      [sort]: order,
-    };
+    const orderBy = listOrderBy(query.sort, query.order ?? "desc");
 
     const [items, total] = await prisma.$transaction([
       prisma.application.findMany({
         where,
-        include: applicationInclude,
+        include: listInclude,
         orderBy,
         skip,
         take: query.pageSize,
@@ -82,6 +155,12 @@ export const applicationRepository = {
       prisma.application.count({ where }),
     ]);
     return { items, total };
+  },
+  touch(id: string) {
+    return prisma.application.update({
+      where: { id },
+      data: { updatedAt: new Date() },
+    });
   },
   countByStatus(userId: string) {
     return prisma.application.groupBy({

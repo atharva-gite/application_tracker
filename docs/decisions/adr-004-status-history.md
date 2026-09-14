@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Pipeline analytics and the application timeline need to know how long a role
+Stage analytics and the application timeline need to know how long a role
 spent in each stage. Overwriting `applications.status` would destroy that
 history.
 

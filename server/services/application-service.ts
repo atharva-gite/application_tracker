@@ -1,11 +1,12 @@
 import { AppError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { serializeApplication, serializeStatusHistory } from "@/lib/serializers";
-import type {
-  ApplicationCreateInput,
-  ApplicationListQuery,
-  ApplicationStatusInput,
-  ApplicationUpdateInput,
+import {
+  isAllowedApplicationStatusTransition,
+  type ApplicationCreateInput,
+  type ApplicationListQuery,
+  type ApplicationStatusInput,
+  type ApplicationUpdateInput,
 } from "@/lib/validation/application";
 import { assertOwnedBy } from "@/server/authorization/ownership";
 import { applicationRepository } from "@/server/repositories/application-repository";
@@ -101,7 +102,10 @@ export async function changeApplicationStatus(
   id: string,
   input: ApplicationStatusInput,
 ) {
-  await getOwnedApplication(id, userId);
+  const current = await getOwnedApplication(id, userId);
+  if (!isAllowedApplicationStatusTransition(current.status, input.status)) {
+    throw new AppError("VALIDATION_ERROR", "That stage change is not allowed.");
+  }
   const application = await applicationRepository.changeStatus(
     id,
     userId,

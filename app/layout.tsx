@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 
+import { APP_DESCRIPTION, APP_NAME, APP_TAGLINE } from "@/lib/brand";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,20 +14,37 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+});
+
 export const metadata: Metadata = {
   title: {
-    default: "Pipeline",
-    template: "%s · Pipeline",
+    default: `${APP_NAME} · Application tracker`,
+    template: `%s · ${APP_NAME}`,
   },
-  description:
-    "Track internship and job applications, interviews, and follow-ups in one place.",
+  description: APP_DESCRIPTION,
+  applicationName: APP_NAME,
+  keywords: [
+    "internship tracker",
+    "job application tracker",
+    "interview tracker",
+    "job search",
+  ],
+  openGraph: {
+    title: `${APP_NAME} · ${APP_TAGLINE}`,
+    description: APP_DESCRIPTION,
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-background text-foreground">{children}</body>
     </html>

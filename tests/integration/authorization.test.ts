@@ -11,6 +11,7 @@ import {
   getApplication,
   getApplicationHistory,
   listApplications,
+  updateApplication,
 } from "@/server/services/application-service";
 import { createCompany, deleteCompany, getCompany } from "@/server/services/company-service";
 import { createContact, getOwnedContact, listContacts } from "@/server/services/contact-service";
@@ -75,7 +76,14 @@ describe("authorization isolation", () => {
       role: "Recruiter",
     });
 
+    const own = await getApplication(owner.id, application.id);
+    expect(own.roleTitle).toBe("Backend Intern");
+    expect(own.location).toBe("Remote");
+
     await expect(getApplication(other.id, application.id)).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+    await expect(getApplication(other.id, "missing-application")).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
     await expect(getCompany(other.id, application.company.id)).rejects.toMatchObject({
@@ -117,6 +125,69 @@ describe("authorization isolation", () => {
     expect(note.id).toBeTruthy();
     expect(followUp.id).toBeTruthy();
   });
+
+  it("loads application workspace records and keeps them after an edit", async (context) => {
+    await ensureDatabase(context);
+    const user = await createTestUser("Workspace Owner");
+    const application = await createTestApplication(user.id, {
+      companyName: "Notion",
+      roleTitle: "Product Intern",
+      status: "SAVED",
+    });
+    const interview = await createInterview(
+      user.id,
+      application.id,
+      parseSchema(interviewInputSchema, {
+        scheduledAt: "2026-09-20T10:00",
+        type: "BEHAVIORAL",
+        interviewerName: "Alex",
+      }),
+    );
+    const note = await createNote(user.id, application.id, {
+      content: "Ask about the intern program",
+    });
+    const followUp = await createFollowUp(
+      user.id,
+      application.id,
+      parseSchema(followUpInputSchema, {
+        dueAt: "2026-09-21T09:00",
+        type: "THANK_YOU",
+        note: "Send thank-you note",
+      }),
+    );
+    const contact = await createContact(user.id, {
+      name: "Sam Recruiter",
+      role: "University recruiter",
+      email: "sam@example.com",
+    });
+    const { linkApplicationContact } = await import("@/server/services/contact-service");
+    await linkApplicationContact(user.id, application.id, { contactId: contact.id });
+
+    const interviews = await listApplicationInterviews(user.id, application.id);
+    const notes = await listApplicationNotes(user.id, application.id);
+    const history = await getApplicationHistory(user.id, application.id);
+    expect(interviews.interviews.map((item) => item.id)).toEqual([interview.id]);
+    expect(notes.notes.map((item) => item.content)).toEqual(["Ask about the intern program"]);
+    expect(history.history[0]?.toStatus).toBe("SAVED");
+    expect(history.history[0]?.fromStatus).toBeNull();
+
+    await updateApplication(user.id, application.id, {
+      roleTitle: "Software Intern",
+      location: "Remote",
+    });
+
+    const updated = await getApplication(user.id, application.id);
+    expect(updated.roleTitle).toBe("Software Intern");
+    const keptInterviews = await listApplicationInterviews(user.id, application.id);
+    const keptNotes = await listApplicationNotes(user.id, application.id);
+    const keptFollowUps = await listApplicationFollowUps(user.id, application.id);
+    expect(keptInterviews.interviews.map((item) => item.id)).toEqual([interview.id]);
+    expect(keptNotes.notes.map((item) => item.id)).toEqual([note.id]);
+    expect(keptFollowUps.followUps.map((item) => item.id)).toEqual([followUp.id]);
+    await expect(
+      prisma.applicationContact.count({ where: { applicationId: application.id } }),
+    ).resolves.toBe(1);
+  });
 });
 
 describe("application workflow", () => {
@@ -151,6 +222,8 @@ describe("application workflow", () => {
       "APPLIED",
       "INTERVIEW",
     ]);
+    expect(history.history[0]?.fromStatus).toBeNull();
+    expect(history.history[1]?.fromStatus).toBe("APPLIED");
 
     const interviews = await listApplications(user.id, {
       page: 1,
@@ -177,6 +250,53 @@ describe("application workflow", () => {
       "Google",
     ]);
 
+    const combined = await listApplications(user.id, {
+      page: 1,
+      pageSize: 20,
+      q: "intern",
+      status: "SAVED",
+      source: "Campus",
+    });
+    expect(combined.applications.map((item) => item.id)).toEqual([saved.id]);
+
+    const byCompany = await listApplications(user.id, {
+      page: 1,
+      pageSize: 20,
+      sort: "company",
+      order: "asc",
+    });
+    expect(byCompany.applications.map((item) => item.company.name)).toEqual([
+      "Google",
+      "Meta",
+    ]);
+
+    const byRole = await listApplications(user.id, {
+      page: 1,
+      pageSize: 20,
+      sort: "roleTitle",
+      order: "asc",
+    });
+    expect(byRole.applications.map((item) => item.roleTitle)).toEqual([
+      "ML Intern",
+      "Software Engineering Intern",
+    ]);
+
+    const pageOne = await listApplications(user.id, {
+      page: 1,
+      pageSize: 1,
+      sort: "company",
+      order: "asc",
+    });
+    const pageTwo = await listApplications(user.id, {
+      page: 2,
+      pageSize: 1,
+      sort: "company",
+      order: "asc",
+    });
+    expect(pageOne.total).toBe(2);
+    expect(pageOne.applications.map((item) => item.company.name)).toEqual(["Google"]);
+    expect(pageTwo.applications.map((item) => item.company.name)).toEqual(["Meta"]);
+
     await archiveApplication(user.id, saved.id);
     const active = await listApplications(user.id, { page: 1, pageSize: 20 });
     expect(active.applications.map((item) => item.id)).toEqual([applied.id]);
@@ -197,6 +317,65 @@ describe("application workflow", () => {
     await expect(deleteCompany(user.id, company.id)).rejects.toMatchObject({
       code: "CONFLICT",
     });
+  });
+
+  it("derives last activity from persisted notes and history, and filters deadlines", async (context) => {
+    await ensureDatabase(context);
+    const user = await createTestUser("Activity User");
+    const stale = await createTestApplication(user.id, {
+      companyName: "Zebra",
+      roleTitle: "Research Intern",
+      status: "SAVED",
+      deadline: "2026-12-01",
+    });
+    const overdue = await createTestApplication(user.id, {
+      companyName: "Acme",
+      roleTitle: "Backend Intern",
+      status: "APPLIED",
+      deadline: "2020-01-01",
+    });
+
+    await createNote(user.id, stale.id, { content: "Emailed the recruiter" });
+    await changeApplicationStatus(user.id, overdue.id, { status: "INTERVIEW" });
+
+    const listed = await listApplications(user.id, {
+      page: 1,
+      pageSize: 20,
+      sort: "lastActivity",
+      order: "desc",
+    });
+    expect(listed.applications.map((item) => item.id)).toEqual([overdue.id, stale.id]);
+    const staleRow = listed.applications.find((item) => item.id === stale.id);
+    const overdueRow = listed.applications.find((item) => item.id === overdue.id);
+    expect(staleRow?.lastActivityAt).toBeTruthy();
+    expect(staleRow?.createdAt).toBeTruthy();
+    expect(new Date(staleRow!.lastActivityAt!).getTime()).toBeGreaterThan(
+      new Date(staleRow!.createdAt!).getTime(),
+    );
+    expect(new Date(overdueRow!.lastActivityAt!).getTime()).toBeGreaterThan(
+      new Date(overdueRow!.createdAt!).getTime(),
+    );
+
+    const dueOverdue = await listApplications(user.id, {
+      page: 1,
+      pageSize: 20,
+      due: "overdue",
+    });
+    expect(dueOverdue.applications.map((item) => item.id)).toEqual([overdue.id]);
+
+    const dueUpcoming = await listApplications(user.id, {
+      page: 1,
+      pageSize: 20,
+      due: "upcoming",
+    });
+    expect(dueUpcoming.applications.map((item) => item.id)).toEqual([stale.id]);
+
+    const roleSearch = await listApplications(user.id, {
+      page: 1,
+      pageSize: 20,
+      q: "backend",
+    });
+    expect(roleSearch.applications.map((item) => item.id)).toEqual([overdue.id]);
   });
 
   it("surfaces interviews, deadlines, and follow-ups on the dashboard", async (context) => {
@@ -229,6 +408,9 @@ describe("application workflow", () => {
         type: "RECRUITER",
       }),
     );
+
+    const moved = await getApplication(user.id, application.id);
+    expect(moved.status).toBe("INTERVIEW");
 
     const dashboard = await getDashboard(user.id);
     expect(dashboard.metrics.applications).toBe(1);

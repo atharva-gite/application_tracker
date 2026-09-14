@@ -27,10 +27,10 @@ export function NavLinks({ variant }: { variant: "side" | "mobile" }) {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium ${
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium ${
                 active
-                  ? "bg-white text-stone-900 shadow-sm ring-1 ring-border"
-                  : "text-stone-600 hover:bg-white/70 hover:text-stone-900"
+                  ? "bg-[var(--accent-soft)] text-accent"
+                  : "text-stone-600 hover:bg-[var(--background)] hover:text-stone-900"
               }`}
             >
               <Icon />
@@ -43,10 +43,10 @@ export function NavLinks({ variant }: { variant: "side" | "mobile" }) {
             key={item.href}
             href={item.href}
             className={`whitespace-nowrap rounded-full px-3 py-1.5 text-sm ${
-              active
-                ? "bg-stone-900 text-white"
-                : "bg-white/80 text-stone-700 ring-1 ring-border"
-            }`}
+                active
+                  ? "bg-accent text-white"
+                  : "bg-white text-stone-700 ring-1 ring-border"
+              }`}
           >
             {item.label}
           </Link>

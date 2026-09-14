@@ -29,7 +29,7 @@ export default function ErrorPage({
       <button
         type="button"
         onClick={reset}
-        className="mt-6 rounded-md bg-accent px-4 py-2 text-sm font-medium text-white"
+        className="btn-primary mt-6"
       >
         Try again
       </button>

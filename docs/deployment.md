@@ -1,6 +1,6 @@
 # Production deployment
 
-Pipeline deploys as a single Next.js app on Vercel, with managed PostgreSQL,
+Folio deploys as a single Next.js app on Vercel, with managed PostgreSQL,
 S3-compatible object storage, Resend, and Sentry. GitHub Actions is the
 quality gate; Vercel is the production runtime.
 
@@ -60,7 +60,7 @@ writing to ephemeral disk.
 Set:
 
 ```text
-EMAIL_FROM="Pipeline <noreply@yourdomain.com>"
+EMAIL_FROM="Folio <noreply@yourdomain.com>"
 RESEND_API_KEY=re_...
 ```
 

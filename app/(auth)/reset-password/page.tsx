@@ -16,7 +16,7 @@ export default async function ResetPasswordPage({
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Choose a new password</h1>
+      <h1 className="font-display text-3xl tracking-tight">Choose a new password</h1>
       <p className="mt-1 text-sm text-stone-600">
         Use the link from your email to set a new password.
       </p>

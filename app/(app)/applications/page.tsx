@@ -1,18 +1,50 @@
 import Link from "next/link";
 
-import { describeWhen } from "@/lib/attention";
+import { ApplicationBoard } from "@/components/applications/application-board";
 import { ApplicationFilters } from "@/components/applications/application-filters";
+import { ApplicationRow } from "@/components/applications/application-row";
 import { Pagination } from "@/components/pagination";
 import { StatusBadge } from "@/components/status-badge";
-import { statusLabels } from "@/lib/labels";
+import {
+  applicationDetailPath,
+  applicationFilterQuery,
+  hasActiveApplicationFilters,
+  resetApplicationsHref,
+  sortHeaderQuery,
+} from "@/lib/application-list";
+import { deadlineToneClass, describeDeadline, describePast } from "@/lib/attention";
+import { withQuery } from "@/lib/query-string";
 import { applicationListQuerySchema } from "@/lib/validation/application";
 import { parseSchema } from "@/lib/validation/helpers";
-import { APPLICATION_STATUSES } from "@/lib/validation/application";
 import { requireUser } from "@/server/authorization/require-user";
 import { listApplications } from "@/server/services/application-service";
 import { listCompanies } from "@/server/services/company-service";
 
 export const metadata = { title: "Applications" };
+
+function SortHeader({
+  field,
+  label,
+  query,
+}: {
+  field: string;
+  label: string;
+  query: Record<string, string | number | undefined | null>;
+}) {
+  const active =
+    query.sort === field || (field === "lastActivity" && query.sort === "updatedAt");
+  return (
+    <th className="px-4 py-3 font-medium">
+      <Link
+        href={withQuery("/applications", sortHeaderQuery(query, field))}
+        className={`hover:text-stone-800 ${active ? "text-stone-800" : ""}`}
+      >
+        {label}
+        {active ? (query.order === "asc" ? " ↑" : " ↓") : ""}
+      </Link>
+    </th>
+  );
+}
 
 export default async function ApplicationsPage({
   searchParams,
@@ -36,14 +68,22 @@ export default async function ApplicationsPage({
     listApplications(user.id, query),
     listCompanies(user.id, { page: 1, pageSize: 100 }),
   ]);
+  const filterQuery = applicationFilterQuery(query, view);
+  const filtered = hasActiveApplicationFilters(query);
+  const showBoard = view === "board" && (applications.length > 0 || filtered);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8">
+    <div className={`mx-auto space-y-8 ${showBoard ? "max-w-none" : "max-w-6xl"}`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Applications</h1>
           <p className="mt-2 text-sm text-stone-600">
-            {total} {total === 1 ? "application" : "applications"} in your pipeline.
+            {total} {total === 1 ? "application" : "applications"}
+            {filtered
+              ? total === 1
+                ? " matches your filters."
+                : " match your filters."
+              : " in your pipeline."}
           </p>
         </div>
         <Link href="/applications/new" className="btn-primary">
@@ -51,126 +91,111 @@ export default async function ApplicationsPage({
         </Link>
       </div>
 
-      <ApplicationFilters query={{ ...query, view }} companies={companies} />
+      <ApplicationFilters query={query} companies={companies} />
 
-      {applications.length === 0 ? (
-        <section className="card border-dashed p-8">
-          <h2 className="text-lg font-medium">No applications yet</h2>
-          <p className="mt-2 max-w-lg text-sm leading-6 text-stone-600">
-            Add your first application to start tracking your job search.
-          </p>
-          <Link href="/applications/new" className="btn-primary mt-5">
-            Add application
-          </Link>
-        </section>
-      ) : view === "board" ? (
-        <div className="grid gap-4 overflow-x-auto pb-4 md:grid-cols-2 xl:grid-cols-4">
-          {APPLICATION_STATUSES.map((status) => {
-            const items = applications.filter((item) => item.status === status);
-            return (
-              <section key={status} className="card min-w-[16rem] p-4">
-                <div className="mb-3 flex items-center justify-between px-1">
-                  <h2 className="text-sm font-medium">{statusLabels[status]}</h2>
-                  <span className="text-xs text-stone-500">{items.length}</span>
-                </div>
-                <div className="space-y-2">
-                  {items.map((item) => {
-                    const due = item.deadline ? describeWhen(item.deadline) : null;
-                    return (
-                    <Link
-                      key={item.id}
-                      href={`/applications/${item.id}`}
-                      className="block rounded-xl bg-white p-3 ring-1 ring-border hover:ring-stone-300"
-                    >
-                      <p className="text-sm font-medium">{item.company.name}</p>
-                      <p className="text-sm text-stone-600">{item.roleTitle}</p>
-                      {due ? (
-                        <p
-                          className={`mt-1 text-xs ${
-                            due.overdue ? "text-[var(--danger)]" : "text-stone-500"
-                          }`}
-                        >
-                          {due.overdue ? "Overdue" : "Due"} {due.label}
-                        </p>
-                      ) : null}
-                    </Link>
-                    );
-                  })}
-                </div>
-              </section>
-            );
-          })}
-        </div>
+      {applications.length === 0 && !showBoard ? (
+        filtered ? (
+          <section className="card border-dashed p-8">
+            <h2 className="text-lg font-medium">No applications match your filters.</h2>
+            <p className="mt-2 max-w-lg text-sm leading-6 text-stone-600">
+              Try a different search, stage, or deadline, or clear the current filters.
+            </p>
+            <Link href={resetApplicationsHref(view)} className="btn-secondary mt-5">
+              Reset filters
+            </Link>
+          </section>
+        ) : (
+          <section className="card border-dashed p-8">
+            <h2 className="text-lg font-medium">No applications yet</h2>
+            <p className="mt-2 max-w-lg text-sm leading-6 text-stone-600">
+              Add your first application to start tracking your job search.
+            </p>
+            <Link href="/applications/new" className="btn-primary mt-5">
+              Add application
+            </Link>
+          </section>
+        )
+      ) : showBoard ? (
+        <ApplicationBoard
+          key={`${query.q ?? ""}:${query.status ?? ""}:${query.companyId ?? ""}:${query.due ?? ""}:${query.archived ?? ""}:${total}`}
+          applications={applications}
+        />
       ) : (
         <div className="card overflow-hidden">
-          <table className="hidden w-full text-left text-sm sm:table">
-            <thead className="border-b border-border text-stone-500">
-              <tr>
-                <th className="px-4 py-3 font-medium">Company</th>
-                <th className="px-4 py-3 font-medium">Role</th>
-                <th className="px-4 py-3 font-medium">Stage</th>
-                <th className="px-4 py-3 font-medium">Deadline</th>
-                <th className="px-4 py-3 font-medium">Source</th>
-              </tr>
-            </thead>
-            <tbody>
-              {applications.map((item) => {
-                const due = item.deadline ? describeWhen(item.deadline) : null;
-                return (
-                <tr key={item.id} className="border-b border-border last:border-0">
-                  <td className="px-4 py-3">
-                    <Link href={`/applications/${item.id}`} className="font-medium hover:underline">
-                      {item.company.name}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">{item.roleTitle}</td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={item.status} />
-                  </td>
-                  <td
-                    className={`px-4 py-3 ${due?.overdue ? "text-[var(--danger)]" : "text-stone-600"}`}
-                  >
-                    {due ? `${due.overdue ? "Overdue · " : ""}${due.label}` : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-stone-600">{item.source ?? "—"}</td>
+          <div className="overflow-x-auto">
+            <table className="hidden w-full min-w-[40rem] text-left text-sm sm:table">
+              <thead className="border-b border-border text-stone-500">
+                <tr>
+                  <SortHeader field="company" label="Company" query={filterQuery} />
+                  <SortHeader field="roleTitle" label="Role" query={filterQuery} />
+                  <th className="px-4 py-3 font-medium">Stage</th>
+                  <SortHeader field="deadline" label="Deadline" query={filterQuery} />
+                  <SortHeader field="lastActivity" label="Last activity" query={filterQuery} />
                 </tr>
-                );
-              })}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {applications.map((item) => {
+                  const due = describeDeadline(item.deadline);
+                  const activity = item.lastActivityAt ?? item.updatedAt ?? item.createdAt;
+                  return (
+                    <ApplicationRow
+                      key={item.id}
+                      id={item.id}
+                      company={item.company.name}
+                      roleTitle={item.roleTitle}
+                    >
+                      <span className="font-medium">{item.company.name}</span>
+                      <span>{item.roleTitle}</span>
+                      <StatusBadge status={item.status} />
+                      <span className={deadlineToneClass(due.kind)}>{due.label}</span>
+                      <span className="text-stone-600">
+                        {activity ? describePast(activity) : "—"}
+                      </span>
+                    </ApplicationRow>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
           <div className="divide-y divide-border sm:hidden">
-            {applications.map((item) => (
-              <Link key={item.id} href={`/applications/${item.id}`} className="block p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-medium">{item.company.name}</p>
-                  <StatusBadge status={item.status} />
-                </div>
-                <p className="mt-1 text-sm text-stone-600">{item.roleTitle}</p>
-              </Link>
-            ))}
+            {applications.map((item) => {
+              const due = describeDeadline(item.deadline);
+              const activity = item.lastActivityAt ?? item.updatedAt ?? item.createdAt;
+              return (
+                <Link
+                  key={item.id}
+                  href={applicationDetailPath(item.id)}
+                  className="block p-4"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-medium">{item.company.name}</p>
+                    <StatusBadge status={item.status} />
+                  </div>
+                  <p className="mt-1 text-sm text-stone-600">{item.roleTitle}</p>
+                  <p className={`mt-1 text-xs ${deadlineToneClass(due.kind)}`}>
+                    {due.kind === "none" ? "No deadline" : due.label}
+                  </p>
+                  <p className="mt-0.5 text-xs text-stone-500">
+                    {activity ? describePast(activity) : null}
+                  </p>
+                </Link>
+              );
+            })}
           </div>
         </div>
       )}
 
-      <Pagination
-        pathname="/applications"
-        query={{
-          q: query.q,
-          status: query.status,
-          companyId: query.companyId,
-          location: query.location,
-          source: query.source,
-          deadlineFrom: query.deadlineFrom,
-          deadlineTo: query.deadlineTo,
-          sort: query.sort,
-          order: query.order,
-          view,
-          archived: query.archived,
-        }}
-        page={page}
-        pageSize={pageSize}
-        total={total}
-      />
+      {view === "list" ? (
+        <Pagination
+          pathname="/applications"
+          query={filterQuery}
+          page={page}
+          pageSize={pageSize}
+          total={total}
+        />
+      ) : total > pageSize ? (
+        <p className="text-sm text-stone-500">Showing the first {pageSize} matching applications.</p>
+      ) : null}
     </div>
   );
 }

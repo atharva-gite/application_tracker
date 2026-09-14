@@ -3,6 +3,7 @@ import { logger } from "@/lib/logger";
 import { serializeFollowUp } from "@/lib/serializers";
 import type { FollowUpInput, FollowUpUpdateInput } from "@/lib/validation/follow-up";
 import { followUpRepository } from "@/server/repositories/follow-up-repository";
+import { applicationRepository } from "@/server/repositories/application-repository";
 import { getOwnedApplication } from "@/server/services/application-service";
 
 async function getOwnedFollowUp(id: string, userId: string) {
@@ -34,6 +35,7 @@ export async function createFollowUp(
 ) {
   await getOwnedApplication(applicationId, userId);
   const followUp = await followUpRepository.create(userId, applicationId, input);
+  await applicationRepository.touch(applicationId);
   logger.info("follow_up.created", {
     userId,
     applicationId,
@@ -49,6 +51,7 @@ export async function updateFollowUp(
 ) {
   await getOwnedFollowUp(id, userId);
   const followUp = await followUpRepository.update(id, input);
+  await applicationRepository.touch(followUp.applicationId);
   logger.info("follow_up.updated", { userId, followUpId: id });
   return serializeFollowUp(followUp);
 }

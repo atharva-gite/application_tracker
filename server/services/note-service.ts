@@ -3,6 +3,7 @@ import { logger } from "@/lib/logger";
 import { serializeNote } from "@/lib/serializers";
 import type { NoteInput, NoteUpdateInput } from "@/lib/validation/note";
 import { noteRepository } from "@/server/repositories/note-repository";
+import { applicationRepository } from "@/server/repositories/application-repository";
 import { getOwnedApplication } from "@/server/services/application-service";
 
 async function getOwnedNote(id: string, userId: string) {
@@ -29,6 +30,7 @@ export async function createNote(
 ) {
   await getOwnedApplication(applicationId, userId);
   const note = await noteRepository.create(userId, applicationId, input);
+  await applicationRepository.touch(applicationId);
   logger.info("note.created", { userId, applicationId, noteId: note.id });
   return serializeNote(note);
 }
@@ -36,6 +38,7 @@ export async function createNote(
 export async function updateNote(userId: string, id: string, input: NoteUpdateInput) {
   await getOwnedNote(id, userId);
   const note = await noteRepository.update(id, input);
+  await applicationRepository.touch(note.applicationId);
   logger.info("note.updated", { userId, noteId: id });
   return serializeNote(note);
 }

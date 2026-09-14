@@ -23,7 +23,17 @@ export const interviewRepository = {
       where: {
         application: { userId, archivedAt: null },
         status: "SCHEDULED",
-        scheduledAt: { gte: new Date(Date.now() - 60 * 60 * 1000) },
+      },
+      include: withApplication,
+      orderBy: { scheduledAt: "asc" },
+      take,
+    });
+  },
+  listForUser(userId: string, take = 50) {
+    return prisma.interview.findMany({
+      where: {
+        application: { userId, archivedAt: null },
+        status: { not: "CANCELLED" },
       },
       include: withApplication,
       orderBy: { scheduledAt: "asc" },

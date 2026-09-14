@@ -81,7 +81,7 @@ export async function requestPasswordReset(input: ForgotPasswordInput) {
     const resetUrl = `${getAppUrl()}/reset-password?token=${token}`;
     await getEmailClient().send({
       to: user.email,
-      subject: "Reset your Pipeline password",
+      subject: "Reset your Folio password",
       text: `Reset your password using this link, which expires in one hour:\n\n${resetUrl}\n`,
     });
 

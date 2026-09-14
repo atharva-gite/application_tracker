@@ -64,7 +64,7 @@ export function getEmailClient(): EmailClient {
   if (apiKey) {
     return new ResendEmailClient(
       apiKey,
-      process.env.EMAIL_FROM ?? "Pipeline <noreply@localhost>",
+      process.env.EMAIL_FROM ?? "Folio <noreply@localhost>",
     );
   }
   return new ConsoleEmailClient();

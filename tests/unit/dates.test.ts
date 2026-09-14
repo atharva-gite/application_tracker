@@ -4,6 +4,7 @@ import { formatDateOnly, toDateOnly } from "@/lib/domain";
 import { AppError } from "@/lib/errors";
 import { parseSchema } from "@/lib/validation/helpers";
 import { dateOnlySchema, dateTimeSchema, paginationSchema } from "@/lib/validation/helpers";
+import { applicationListQuerySchema } from "@/lib/validation/application";
 
 describe("dates", () => {
   it("stores date-only values at UTC midnight", () => {
@@ -34,5 +35,24 @@ describe("pagination", () => {
 
   it("rejects oversized pages", () => {
     expect(() => parseSchema(paginationSchema, { pageSize: 101 })).toThrow(AppError);
+  });
+
+  it("accepts application list search, due, and last-activity sort", () => {
+    expect(
+      parseSchema(applicationListQuerySchema, {
+        q: "Google",
+        status: "INTERVIEW",
+        due: "today",
+        sort: "lastActivity",
+        order: "desc",
+      }),
+    ).toMatchObject({
+      q: "Google",
+      status: "INTERVIEW",
+      due: "today",
+      sort: "lastActivity",
+      page: 1,
+      pageSize: 20,
+    });
   });
 });

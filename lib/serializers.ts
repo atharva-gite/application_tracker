@@ -10,6 +10,7 @@ import type {
 } from "@prisma/client";
 
 import { formatDateOnly, formatDateTime } from "@/lib/domain";
+import { resolveLastActivityAt } from "@/lib/application-list";
 
 export function serializeCompany(company: Company & { _count?: { applications: number } }) {
   return {
@@ -26,7 +27,13 @@ export function serializeCompany(company: Company & { _count?: { applications: n
 }
 
 export function serializeApplication(
-  application: Application & { company: Company },
+  application: Application & {
+    company: Company;
+    statusHistory?: Array<{ changedAt: Date }>;
+    notes?: Array<{ createdAt: Date; updatedAt: Date }>;
+    interviews?: Array<{ createdAt?: Date; updatedAt: Date }>;
+    followUps?: Array<{ createdAt: Date; completedAt: Date | null }>;
+  },
 ) {
   return {
     id: application.id,
@@ -51,6 +58,7 @@ export function serializeApplication(
     archivedAt: formatDateTime(application.archivedAt),
     createdAt: formatDateTime(application.createdAt),
     updatedAt: formatDateTime(application.updatedAt),
+    lastActivityAt: formatDateTime(resolveLastActivityAt(application)),
   };
 }
 

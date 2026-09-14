@@ -1,6 +1,6 @@
 # Architecture
 
-Pipeline is a modular monolith: one Next.js deployable that contains the UI,
+Folio is a modular monolith: one Next.js deployable that contains the UI,
 API, authentication, business logic, and database access.
 
 ```

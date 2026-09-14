@@ -1,7 +1,7 @@
-# Pipeline
+# Folio
 
 Internship and job application tracker. Students can add applications, move
-them through a pipeline, record interviews and follow-ups, and see what needs
+them through stages, record interviews and follow-ups, and see what needs
 attention next.
 
 ## Local setup

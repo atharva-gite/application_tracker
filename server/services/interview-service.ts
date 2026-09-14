@@ -1,9 +1,14 @@
+import { shouldAdvanceToInterview } from "@/lib/analytics-math";
 import { AppError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { serializeInterview } from "@/lib/serializers";
 import type { InterviewInput, InterviewUpdateInput } from "@/lib/validation/interview";
 import { interviewRepository } from "@/server/repositories/interview-repository";
-import { getOwnedApplication } from "@/server/services/application-service";
+import { applicationRepository } from "@/server/repositories/application-repository";
+import {
+  changeApplicationStatus,
+  getOwnedApplication,
+} from "@/server/services/application-service";
 
 async function getOwnedInterview(id: string, userId: string) {
   const interview = await interviewRepository.findById(id);
@@ -27,13 +32,23 @@ export async function listUpcomingInterviews(userId: string) {
   return { interviews: interviews.map(serializeInterview) };
 }
 
+export async function listUserInterviews(userId: string) {
+  const interviews = await interviewRepository.listForUser(userId, 50);
+  return { interviews: interviews.map(serializeInterview) };
+}
+
 export async function createInterview(
   userId: string,
   applicationId: string,
   input: InterviewInput,
 ) {
-  await getOwnedApplication(applicationId, userId);
+  const application = await getOwnedApplication(applicationId, userId);
   const interview = await interviewRepository.create(applicationId, input);
+  if (shouldAdvanceToInterview(application.status)) {
+    await changeApplicationStatus(userId, applicationId, { status: "INTERVIEW" });
+  } else {
+    await applicationRepository.touch(applicationId);
+  }
   logger.info("interview.created", {
     userId,
     applicationId,
@@ -49,6 +64,7 @@ export async function updateInterview(
 ) {
   await getOwnedInterview(id, userId);
   const interview = await interviewRepository.update(id, input);
+  await applicationRepository.touch(interview.applicationId);
   logger.info("interview.updated", { userId, interviewId: id });
   return serializeInterview(interview);
 }

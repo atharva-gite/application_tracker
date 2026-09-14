@@ -13,6 +13,27 @@ export const APPLICATION_STATUSES = [
   "WITHDRAWN",
 ] as const satisfies readonly ApplicationStatus[];
 
+export type ApplicationStatusValue = (typeof APPLICATION_STATUSES)[number];
+
+export function isApplicationStatus(value: unknown): value is ApplicationStatusValue {
+  return (
+    typeof value === "string" &&
+    (APPLICATION_STATUSES as readonly string[]).includes(value)
+  );
+}
+
+/**
+ * Pipeline moves are unrestricted: any current stage may change to any
+ * other valid stage. Encode new restrictions here so the board, detail
+ * page, and API stay consistent.
+ */
+export function isAllowedApplicationStatusTransition(
+  fromStatus: ApplicationStatusValue,
+  toStatus: ApplicationStatusValue,
+) {
+  return isApplicationStatus(fromStatus) && isApplicationStatus(toStatus);
+}
+
 export const EMPLOYMENT_TYPES = [
   "INTERNSHIP",
   "FULL_TIME",
@@ -22,12 +43,22 @@ export const EMPLOYMENT_TYPES = [
 ] as const satisfies readonly EmploymentType[];
 
 export const applicationSortFields = [
+  "lastActivity",
   "updatedAt",
   "createdAt",
   "deadline",
   "applicationDate",
+  "company",
   "roleTitle",
   "status",
+] as const;
+
+export const applicationDueFilters = [
+  "overdue",
+  "today",
+  "tomorrow",
+  "upcoming",
+  "none",
 ] as const;
 
 const applicationFields = {
@@ -107,11 +138,12 @@ export const applicationListQuerySchema = paginationSchema.extend({
   companyId: optional(z.string().min(1)),
   location: optional(z.string().trim().max(160)),
   source: optional(z.string().trim().max(80)),
+  due: optional(z.enum(applicationDueFilters)),
   deadlineFrom: optional(dateOnlySchema),
   deadlineTo: optional(dateOnlySchema),
   appliedFrom: optional(dateOnlySchema),
   appliedTo: optional(dateOnlySchema),
-  sort: z.enum(applicationSortFields).default("updatedAt"),
+  sort: z.enum(applicationSortFields).default("lastActivity"),
   order: z.enum(["asc", "desc"]).default("desc"),
   archived: optional(z.enum(["true", "false", "only"])),
   view: optional(z.enum(["list", "board"])),
@@ -128,6 +160,7 @@ export type ApplicationListQuery = {
   companyId?: string;
   location?: string;
   source?: string;
+  due?: (typeof applicationDueFilters)[number];
   deadlineFrom?: string;
   deadlineTo?: string;
   appliedFrom?: string;

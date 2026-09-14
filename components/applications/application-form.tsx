@@ -12,6 +12,7 @@ import {
   updateApplicationAction,
 } from "@/server/actions/applications";
 import type { FormState } from "@/server/actions/form-state";
+import { CompanyPicker } from "@/components/applications/company-picker";
 import { Field, SelectField, SubmitButton, TextAreaField } from "@/components/ui/fields";
 
 type CompanyOption = { id: string; name: string };
@@ -67,29 +68,21 @@ export function ApplicationForm({
       ) : null}
 
       {hasCompanies ? (
-        <SelectField
-          id="companyId"
-          name="companyId"
-          label="Company"
-          defaultValue={values?.companyId ?? ""}
+        <CompanyPicker
+          companies={companies}
+          defaultCompanyId={values?.companyId}
           error={state.fieldErrors?.companyId?.[0] ?? state.fieldErrors?.companyName?.[0]}
-        >
-          <option value="">Enter a new company below</option>
-          {companies.map((company) => (
-            <option key={company.id} value={company.id}>
-              {company.name}
-            </option>
-          ))}
-        </SelectField>
-      ) : null}
-      <Field
-        id="companyName"
-        name="companyName"
-        label={hasCompanies ? "Or enter a new company" : "Company"}
-        placeholder="Google"
-        required={!hasCompanies && !values?.companyId}
-        error={state.fieldErrors?.companyName?.[0]}
-      />
+        />
+      ) : (
+        <Field
+          id="companyName"
+          name="companyName"
+          label="Company"
+          placeholder="Google"
+          required
+          error={state.fieldErrors?.companyName?.[0]}
+        />
+      )}
       <Field
         id="roleTitle"
         name="roleTitle"

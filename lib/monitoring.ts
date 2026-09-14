@@ -56,7 +56,7 @@ export async function sendSentryEvent(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Sentry-Auth": `Sentry sentry_version=7, sentry_client=pipeline/0.1.0, sentry_key=${parsed.key}`,
+      "X-Sentry-Auth": `Sentry sentry_version=7, sentry_client=folio/0.1.0, sentry_key=${parsed.key}`,
     },
     body: JSON.stringify(payload),
   });

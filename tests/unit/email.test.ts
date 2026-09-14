@@ -16,7 +16,7 @@ describe("email client", () => {
 
   it("uses Resend when an API key is present", () => {
     vi.stubEnv("RESEND_API_KEY", "re_test");
-    vi.stubEnv("EMAIL_FROM", "Pipeline <noreply@example.com>");
+    vi.stubEnv("EMAIL_FROM", "Folio <noreply@example.com>");
     expect(getEmailDriver()).toBe("resend");
     expect(getEmailClient()).toBeInstanceOf(ResendEmailClient);
   });
@@ -25,10 +25,10 @@ describe("email client", () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true });
     vi.stubGlobal("fetch", fetchMock);
 
-    const client = new ResendEmailClient("re_test", "Pipeline <noreply@example.com>");
+    const client = new ResendEmailClient("re_test", "Folio <noreply@example.com>");
     await client.send({
       to: "student@example.com",
-      subject: "Reset your Pipeline password",
+      subject: "Reset your Folio password",
       text: "https://example.com/reset-password?token=abc",
     });
 

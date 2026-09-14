@@ -2,11 +2,11 @@ import { statusLabels } from "@/lib/labels";
 import type { APPLICATION_STATUSES } from "@/lib/validation/application";
 
 const colors: Record<(typeof APPLICATION_STATUSES)[number], string> = {
-  SAVED: "bg-stone-100 text-stone-700 ring-stone-200",
-  APPLIED: "bg-blue-50 text-blue-800 ring-blue-100",
-  ASSESSMENT: "bg-amber-50 text-amber-800 ring-amber-100",
-  INTERVIEW: "bg-violet-50 text-violet-800 ring-violet-100",
-  OFFER: "bg-emerald-50 text-emerald-800 ring-emerald-100",
+  SAVED: "bg-[var(--accent-soft)] text-accent ring-transparent",
+  APPLIED: "bg-sky-50 text-sky-900 ring-sky-100",
+  ASSESSMENT: "bg-amber-50 text-amber-900 ring-amber-100",
+  INTERVIEW: "bg-indigo-50 text-indigo-900 ring-indigo-100",
+  OFFER: "bg-emerald-50 text-emerald-900 ring-emerald-100",
   REJECTED: "bg-red-50 text-red-800 ring-red-100",
   WITHDRAWN: "bg-stone-100 text-stone-500 ring-stone-200",
 };

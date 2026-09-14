@@ -3,6 +3,7 @@ import type { ApplicationStatus } from "@prisma/client";
 import {
   averageStageDurationDays,
   conversionRate,
+  summarizeSources,
 } from "@/lib/analytics-math";
 import { prisma } from "@/lib/prisma";
 import { serializeFollowUp, serializeInterview } from "@/lib/serializers";
@@ -54,8 +55,8 @@ export async function getDashboard(userId: string) {
       where: { userId, archivedAt: null, status: "OFFER" },
     }),
     applicationRepository.countByStatus(userId),
-    interviewRepository.listUpcoming(userId, 8),
-    followUpRepository.listOpen(userId, 8),
+    interviewRepository.listUpcoming(userId, 20),
+    followUpRepository.listOpen(userId, 50),
     prisma.application.findMany({
       where: {
         userId,
@@ -65,7 +66,7 @@ export async function getDashboard(userId: string) {
       },
       include: { company: true },
       orderBy: { deadline: "asc" },
-      take: 8,
+      take: 20,
     }),
     auditRepository.listForUser(userId, 12),
   ]);
@@ -125,17 +126,26 @@ export async function getAnalyticsOverview(userId: string) {
 }
 
 export async function getAnalyticsApplications(userId: string) {
-  const bySource = await prisma.application.groupBy({
-    by: ["source"],
-    where: { userId, archivedAt: null },
-    _count: { _all: true },
-  });
-  const byStatus = await applicationRepository.countByStatus(userId);
+  const [applications, byStatus] = await Promise.all([
+    prisma.application.findMany({
+      where: { userId, archivedAt: null },
+      select: {
+        source: true,
+        status: true,
+        interviews: { select: { id: true }, take: 1 },
+      },
+    }),
+    applicationRepository.countByStatus(userId),
+  ]);
+
   return {
-    bySource: bySource.map((row) => ({
-      source: row.source ?? "Unspecified",
-      count: row._count._all,
-    })),
+    bySource: summarizeSources(
+      applications.map((row) => ({
+        source: row.source,
+        status: row.status,
+        hasInterview: row.interviews.length > 0,
+      })),
+    ),
     byStatus: byStatus.map((row) => ({
       status: row.status,
       count: row._count._all,

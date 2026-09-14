@@ -53,20 +53,13 @@ export default async function DashboardPage() {
           </h1>
           <p className="mt-1 text-sm text-stone-600">
             {emptySearch
-              ? "Start with one role. Pipeline will tell you what needs attention next."
+              ? "Start with one role. Folio will tell you what needs attention next."
               : "What needs attention in your job search."}
           </p>
         </div>
         <Link href="/applications/new" className="btn-primary">
           Add application
         </Link>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-4">
-        <Metric href="/applications" label="Applications" value={data.metrics.applications} />
-        <Metric href="/applications" label="Active" value={data.metrics.active} />
-        <Metric href="/interviews" label="Interviews" value={data.metrics.interviews} />
-        <Metric href="/applications?status=OFFER" label="Offers" value={data.metrics.offers} />
       </div>
 
       <section className="card p-6 sm:p-7">
@@ -125,9 +118,17 @@ export default async function DashboardPage() {
         )}
       </section>
 
+      {!emptySearch ? (
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Metric href="/applications" label="Active" value={data.metrics.active} />
+          <Metric href="/interviews" label="Interviews" value={data.metrics.interviews} />
+          <Metric href="/applications?status=OFFER" label="Offers" value={data.metrics.offers} />
+        </div>
+      ) : null}
+
       <section className="card p-6 sm:p-7">
         <div className="flex items-center justify-between">
-          <h2 className="font-medium">Pipeline</h2>
+          <h2 className="font-medium">Stages</h2>
           <Link href="/applications?view=board" className="text-sm font-medium text-accent">
             Open board
           </Link>
@@ -136,7 +137,7 @@ export default async function DashboardPage() {
           {Object.entries(data.pipeline).map(([status, count]) => (
             <Link
               key={status}
-              href={`/applications?status=${status}`}
+              href={`/applications?status=${status}&view=board`}
               className="rounded-xl bg-white p-3 text-center ring-1 ring-border transition hover:ring-stone-300"
             >
               <p className="text-xl font-semibold">{count}</p>

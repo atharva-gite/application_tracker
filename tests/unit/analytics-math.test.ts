@@ -4,6 +4,8 @@ import {
   averageStageDurationDays,
   conversionRate,
   isAllowedStatusTransition,
+  shouldAdvanceToInterview,
+  summarizeSources,
 } from "@/lib/analytics-math";
 
 describe("conversionRate", () => {
@@ -24,6 +26,31 @@ describe("status transitions", () => {
   it("allows moving to a terminal stage", () => {
     expect(isAllowedStatusTransition("INTERVIEW", "REJECTED")).toBe(true);
     expect(isAllowedStatusTransition("OFFER", "WITHDRAWN")).toBe(true);
+  });
+
+  it("advances early pipeline stages when an interview is added", () => {
+    expect(shouldAdvanceToInterview("SAVED")).toBe(true);
+    expect(shouldAdvanceToInterview("APPLIED")).toBe(true);
+    expect(shouldAdvanceToInterview("ASSESSMENT")).toBe(true);
+    expect(shouldAdvanceToInterview("OFFER")).toBe(false);
+    expect(shouldAdvanceToInterview("REJECTED")).toBe(false);
+  });
+});
+
+describe("summarizeSources", () => {
+  it("counts which sources produce interviews", () => {
+    expect(
+      summarizeSources([
+        { source: "LinkedIn", status: "APPLIED", hasInterview: false },
+        { source: "LinkedIn", status: "INTERVIEW", hasInterview: true },
+        { source: "Campus", status: "APPLIED", hasInterview: false },
+        { source: null, status: "SAVED", hasInterview: false },
+      ]),
+    ).toEqual([
+      { source: "LinkedIn", count: 2, interviews: 1 },
+      { source: "Campus", count: 1, interviews: 0 },
+      { source: "Unspecified", count: 1, interviews: 0 },
+    ]);
   });
 });
 

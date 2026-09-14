@@ -7,10 +7,7 @@ export default function NotFound() {
       <p className="mt-2 max-w-md text-sm text-stone-600">
         That URL does not exist. Go back to the home page or your dashboard.
       </p>
-      <Link
-        href="/"
-        className="mt-6 rounded-md bg-accent px-4 py-2 text-sm font-medium text-white"
-      >
+      <Link href="/" className="btn-primary mt-6">
         Go home
       </Link>
     </div>

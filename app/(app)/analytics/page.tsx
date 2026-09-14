@@ -1,8 +1,8 @@
-import { ActivityList } from "@/components/activity-list";
+import Link from "next/link";
+
 import { statusLabels } from "@/lib/labels";
 import { requireUser } from "@/server/authorization/require-user";
 import {
-  getAnalyticsActivity,
   getAnalyticsApplications,
   getAnalyticsConversion,
   getAnalyticsOverview,
@@ -13,93 +13,107 @@ export const metadata = { title: "Analytics" };
 
 export default async function AnalyticsPage() {
   const user = await requireUser();
-  const [overview, applications, conversion, activity, stageDuration] =
-    await Promise.all([
-      getAnalyticsOverview(user.id),
-      getAnalyticsApplications(user.id),
-      getAnalyticsConversion(user.id),
-      getAnalyticsActivity(user.id),
-      getAnalyticsStageDuration(user.id),
-    ]);
+  const [overview, applications, conversion, stageDuration] = await Promise.all([
+    getAnalyticsOverview(user.id),
+    getAnalyticsApplications(user.id),
+    getAnalyticsConversion(user.id),
+    getAnalyticsStageDuration(user.id),
+  ]);
+  const interviewRate = Math.round(conversion.applicationToInterview * 100);
+  const offerRate = Math.round(conversion.interviewToOffer * 100);
+  const stall = [...stageDuration.byStatus]
+    .filter((row) => row.averageDays > 0 && row.status !== "REJECTED" && row.status !== "WITHDRAWN")
+    .sort((left, right) => right.averageDays - left.averageDays)[0];
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Analytics</h1>
         <p className="mt-1 text-sm text-stone-600">
-          Conversion and activity for your current search.
+          Answers about what is working in this search — not a second dashboard.
         </p>
       </div>
-      <div className="grid gap-3 sm:grid-cols-4">
-        <Card label="Applied" value={overview.applied} />
-        <Card label="Interviews" value={overview.interviews} />
-        <Card
-          label="App → interview"
-          value={`${Math.round(conversion.applicationToInterview * 100)}%`}
+
+      <section className="grid gap-3 sm:grid-cols-3">
+        <Question
+          question="How many have I submitted?"
+          answer={String(overview.applied)}
+          detail="Applications that moved past Saved."
         />
-        <Card
-          label="Interview → offer"
-          value={`${Math.round(conversion.interviewToOffer * 100)}%`}
+        <Question
+          question="Do applications become interviews?"
+          answer={`${interviewRate}%`}
+          detail={
+            conversion.applied === 0
+              ? "Nothing has moved past Saved yet."
+              : `${conversion.interview} of ${conversion.applied} submitted roles reached an interview.`
+          }
         />
-      </div>
-      <section className="rounded-2xl border border-border bg-surface p-5">
-        <h2 className="font-medium">By stage</h2>
-        <ul className="mt-3 space-y-2 text-sm">
-          {applications.byStatus.length === 0 ? (
-            <li className="text-stone-600">No applications yet.</li>
-          ) : (
-            applications.byStatus.map((row) => (
-              <li key={row.status} className="flex justify-between">
-                <span>{statusLabels[row.status]}</span>
-                <span>{row.count}</span>
-              </li>
-            ))
-          )}
-        </ul>
+        <Question
+          question="Do interviews become offers?"
+          answer={`${offerRate}%`}
+          detail={`${conversion.offer} offer${conversion.offer === 1 ? "" : "s"} from ${conversion.interview} interview-stage roles.`}
+        />
       </section>
+
       <section className="rounded-2xl border border-border bg-surface p-5">
-        <h2 className="font-medium">Average days in stage</h2>
-        <ul className="mt-3 space-y-2 text-sm">
-          {stageDuration.byStatus.every((row) => row.averageDays === 0) ? (
-            <li className="text-stone-600">Move applications through stages to see this.</li>
-          ) : (
-            stageDuration.byStatus.map((row) => (
-              <li key={row.status} className="flex justify-between">
-                <span>{statusLabels[row.status]}</span>
-                <span>{row.averageDays}</span>
-              </li>
-            ))
-          )}
-        </ul>
+        <h2 className="font-medium">Where do applications stall?</h2>
+        <p className="mt-1 text-sm text-stone-600">
+          {stall
+            ? `Longest average time is in ${statusLabels[stall.status]} (${stall.averageDays} days).`
+            : "Move applications through stages to see time in each one."}
+        </p>
+        {stageDuration.byStatus.some((row) => row.averageDays > 0) ? (
+          <ul className="mt-3 space-y-2 text-sm">
+            {stageDuration.byStatus
+              .filter((row) => row.averageDays > 0)
+              .map((row) => (
+                <li key={row.status} className="flex justify-between">
+                  <Link href={`/applications?status=${row.status}`} className="hover:underline">
+                    {statusLabels[row.status]}
+                  </Link>
+                  <span>{row.averageDays} days</span>
+                </li>
+              ))}
+          </ul>
+        ) : null}
       </section>
+
       <section className="rounded-2xl border border-border bg-surface p-5">
-        <h2 className="font-medium">By source</h2>
+        <h2 className="font-medium">Which sources lead to interviews?</h2>
         <ul className="mt-3 space-y-2 text-sm">
           {applications.bySource.length === 0 ? (
-            <li className="text-stone-600">No applications yet.</li>
+            <li className="text-stone-600">Add a source when you create applications to compare them.</li>
           ) : (
             applications.bySource.map((row) => (
-              <li key={row.source} className="flex justify-between">
+              <li key={row.source} className="flex justify-between gap-4">
                 <span>{row.source}</span>
-                <span>{row.count}</span>
+                <span className="text-stone-600">
+                  {row.interviews} interview{row.interviews === 1 ? "" : "s"} / {row.count}
+                </span>
               </li>
             ))
           )}
         </ul>
-      </section>
-      <section className="rounded-2xl border border-border bg-surface p-5">
-        <h2 className="font-medium">Recent activity</h2>
-        <ActivityList events={activity.activity} />
       </section>
     </div>
   );
 }
 
-function Card({ label, value }: { label: string; value: string | number }) {
+function Question({
+  question,
+  answer,
+  detail,
+}: {
+  question: string;
+  answer: string;
+  detail: string;
+}) {
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
-      <p className="text-sm text-stone-500">{label}</p>
-      <p className="mt-1 text-2xl font-semibold">{value}</p>
+      <p className="text-sm text-stone-500">{question}</p>
+      <p className="mt-2 text-2xl font-semibold">{answer}</p>
+      <p className="mt-2 text-sm text-stone-600">{detail}</p>
     </div>
   );
 }

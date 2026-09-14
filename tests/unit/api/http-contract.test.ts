@@ -47,7 +47,10 @@ import { POST as createNote } from "@/app/api/applications/[id]/notes/route";
 import { POST as changeStatus } from "@/app/api/applications/[id]/status/route";
 import { AppError, ErrorCode } from "@/lib/errors";
 import { requireUser } from "@/server/authorization/require-user";
-import { createApplication as createApplicationService } from "@/server/services/application-service";
+import {
+  changeApplicationStatus,
+  createApplication as createApplicationService,
+} from "@/server/services/application-service";
 import {
   createCompany as createCompanyService,
   getCompany as getCompanyService,
@@ -65,6 +68,7 @@ describe("API HTTP contract", () => {
     vi.mocked(createCompanyService).mockReset();
     vi.mocked(getDocumentFile).mockReset();
     vi.mocked(createInterviewService).mockReset();
+    vi.mocked(changeApplicationStatus).mockReset();
   });
 
   it("reports health without authentication", async () => {
@@ -132,6 +136,62 @@ describe("API HTTP contract", () => {
       { params: Promise.resolve({ id: "app-1" }) },
     );
     expect(response.status).toBe(422);
+    expect(changeApplicationStatus).not.toHaveBeenCalled();
+  });
+
+  it("rejects unauthenticated status changes", async () => {
+    vi.mocked(requireUser).mockRejectedValue(
+      new AppError("UNAUTHORIZED", "You need to sign in to continue."),
+    );
+    const response = await changeStatus(
+      new Request("http://localhost:3000/api/applications/app-1/status", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status: "INTERVIEW" }),
+      }),
+      { params: Promise.resolve({ id: "app-1" }) },
+    );
+    expect(response.status).toBe(401);
+    expect(changeApplicationStatus).not.toHaveBeenCalled();
+  });
+
+  it("rejects status changes for another user's application", async () => {
+    vi.mocked(requireUser).mockResolvedValue(userA);
+    vi.mocked(changeApplicationStatus).mockRejectedValue(
+      new AppError("NOT_FOUND", "Application not found."),
+    );
+    const response = await changeStatus(
+      new Request("http://localhost:3000/api/applications/app-b/status", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status: "REJECTED" }),
+      }),
+      { params: Promise.resolve({ id: "app-b" }) },
+    );
+    expect(response.status).toBe(404);
+    expect(changeApplicationStatus).toHaveBeenCalledWith("user-a", "app-b", {
+      status: "REJECTED",
+    });
+  });
+
+  it("persists a valid status change", async () => {
+    vi.mocked(requireUser).mockResolvedValue(userA);
+    vi.mocked(changeApplicationStatus).mockResolvedValue({
+      id: "app-1",
+      status: "INTERVIEW",
+    } as never);
+    const response = await changeStatus(
+      new Request("http://localhost:3000/api/applications/app-1/status", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status: "INTERVIEW" }),
+      }),
+      { params: Promise.resolve({ id: "app-1" }) },
+    );
+    expect(response.status).toBe(200);
+    expect(changeApplicationStatus).toHaveBeenCalledWith("user-a", "app-1", {
+      status: "INTERVIEW",
+    });
   });
 
   it("hides another user's company", async () => {

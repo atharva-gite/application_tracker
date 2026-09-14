@@ -8,8 +8,10 @@ import { canPreviewInBrowser } from "@/lib/document-file";
 
 export function DocumentRow({
   document,
+  caption,
 }: {
   document: { id: string; name: string; type: string; mimeType: string; filename: string };
+  caption?: string;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -32,6 +34,7 @@ export function DocumentRow({
       <div className="min-w-0">
         <p className="font-medium">{document.name}</p>
         <p className="mt-0.5 truncate text-sm text-stone-500">{document.filename}</p>
+        {caption ? <p className="mt-1 text-xs text-stone-500">{caption}</p> : null}
       </div>
       <div className="flex flex-wrap gap-2">
         <Link href={`/resumes/${document.id}`} className="btn-secondary">

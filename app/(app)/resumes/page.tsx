@@ -21,7 +21,7 @@ export default async function ResumesPage() {
           <section className="card mt-8 border-dashed p-8">
             <h2 className="text-lg font-medium">No documents yet</h2>
             <p className="mt-2 max-w-md text-sm leading-6 text-stone-600">
-              Upload a PDF resume to view it in Pipeline, or a Word file to store
+              Upload a PDF resume to view it in Folio, or a Word file to store
               and download later.
             </p>
           </section>

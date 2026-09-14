@@ -13,8 +13,8 @@ export function AppShell({
   userName: string;
 }) {
   return (
-    <div className="min-h-full lg:grid lg:grid-cols-[17.5rem_1fr]">
-      <aside className="hidden border-r border-border/80 bg-surface/95 lg:flex lg:flex-col lg:justify-between">
+    <div className="min-h-full lg:grid lg:grid-cols-[16.5rem_1fr]">
+      <aside className="hidden border-r border-border bg-surface lg:flex lg:flex-col lg:justify-between">
         <div className="px-4 pt-6">
           <div className="px-2">
             <Logo href="/dashboard" />
@@ -22,7 +22,7 @@ export function AppShell({
           <Link href="/applications/new" className="btn-primary mt-6 w-full">
             Add application
           </Link>
-          <nav className="mt-6 space-y-1">
+          <nav className="mt-6 space-y-0.5">
             <NavLinks variant="side" />
           </nav>
         </div>
@@ -34,7 +34,10 @@ export function AppShell({
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{userName}</p>
               <form action={logoutAction}>
-                <button type="submit" className="mt-0.5 text-sm text-stone-500 hover:text-stone-900">
+                <button
+                  type="submit"
+                  className="mt-0.5 text-sm text-stone-500 hover:text-stone-900"
+                >
                   Log out
                 </button>
               </form>
@@ -43,8 +46,8 @@ export function AppShell({
         </div>
       </aside>
 
-      <div className="flex min-h-full flex-col">
-        <header className="sticky top-0 z-10 border-b border-border/80 bg-background/90 px-4 py-3 backdrop-blur lg:hidden">
+      <div className="flex min-h-full min-w-0 flex-col">
+        <header className="sticky top-0 z-10 border-b border-border bg-background/90 px-4 py-3 backdrop-blur lg:hidden">
           <div className="flex items-center justify-between gap-3">
             <Logo href="/dashboard" size="sm" />
             <div className="flex items-center gap-2">
@@ -62,7 +65,7 @@ export function AppShell({
             <NavLinks variant="mobile" />
           </nav>
         </header>
-        <main className="flex-1 px-5 py-8 sm:px-10 sm:py-10">{children}</main>
+        <main className="min-w-0 flex-1 px-5 py-8 sm:px-10 sm:py-10">{children}</main>
       </div>
     </div>
   );

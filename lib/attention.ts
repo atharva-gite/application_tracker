@@ -27,7 +27,7 @@ function parseWhen(value: string) {
 }
 
 function formatDay(date: Date) {
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 function formatTime(date: Date) {
@@ -67,6 +67,78 @@ export function describeWhen(value: string, now = new Date()): RelativeWhen {
     return { overdue: false, label: `In ${dayDiff} days`, at };
   }
   return { overdue: false, label: formatDay(date), at };
+}
+
+export type DeadlineKind =
+  | "overdue"
+  | "due_today"
+  | "due_tomorrow"
+  | "upcoming"
+  | "none";
+
+export type DeadlineDisplay = {
+  kind: DeadlineKind;
+  label: string;
+};
+
+export function describeDeadline(
+  value: string | null | undefined,
+  now = new Date(),
+): DeadlineDisplay {
+  if (!value) {
+    return { kind: "none", label: "—" };
+  }
+  const relative = describeWhen(value, now);
+  if (relative.overdue) {
+    return { kind: "overdue", label: relative.label };
+  }
+  const date = parseWhen(value);
+  const dayDiff = Math.round(
+    (startOfLocalDay(date) - startOfLocalDay(now)) / 86_400_000,
+  );
+  if (dayDiff === 0) {
+    return { kind: "due_today", label: "Today" };
+  }
+  if (dayDiff === 1) {
+    return { kind: "due_tomorrow", label: "Tomorrow" };
+  }
+  return { kind: "upcoming", label: relative.label };
+}
+
+export function deadlineToneClass(kind: DeadlineKind) {
+  switch (kind) {
+    case "overdue":
+      return "text-[var(--danger)]";
+    case "due_today":
+      return "font-medium text-stone-800";
+    case "due_tomorrow":
+      return "text-stone-700";
+    case "upcoming":
+      return "text-stone-600";
+    case "none":
+      return "text-stone-400";
+  }
+}
+
+export function describePast(value: string, now = new Date()) {
+  const date = parseWhen(value);
+  const today = startOfLocalDay(now);
+  const day = startOfLocalDay(date);
+  const dayDiff = Math.round((day - today) / 86_400_000);
+
+  if (dayDiff === 0) {
+    return "Today";
+  }
+  if (dayDiff === -1) {
+    return "Yesterday";
+  }
+  if (dayDiff < -1 && dayDiff >= -7) {
+    return `${-dayDiff} days ago`;
+  }
+  if (dayDiff > 0) {
+    return describeWhen(value, now).label;
+  }
+  return formatDay(date);
 }
 
 export function buildAttentionItems(
