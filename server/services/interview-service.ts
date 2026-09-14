@@ -33,8 +33,12 @@ export async function listUpcomingInterviews(userId: string) {
 }
 
 export async function listUserInterviews(userId: string) {
-  const interviews = await interviewRepository.listForUser(userId, 50);
+  const interviews = await interviewRepository.listForUser(userId);
   return { interviews: interviews.map(serializeInterview) };
+}
+
+export async function getInterview(userId: string, id: string) {
+  return serializeInterview(await getOwnedInterview(id, userId));
 }
 
 export async function createInterview(
@@ -62,10 +66,19 @@ export async function updateInterview(
   id: string,
   input: InterviewUpdateInput,
 ) {
-  await getOwnedInterview(id, userId);
-  const interview = await interviewRepository.update(id, input);
+  const existing = await getOwnedInterview(id, userId);
+  const nextStatus = input.status ?? existing.status;
+  const patch: InterviewUpdateInput = { ...input };
+  if (nextStatus === "COMPLETED" && patch.outcome === undefined && !existing.outcome) {
+    patch.outcome = "PENDING";
+  }
+  const interview = await interviewRepository.update(id, patch);
   await applicationRepository.touch(interview.applicationId);
-  logger.info("interview.updated", { userId, interviewId: id });
+  logger.info("interview.updated", {
+    userId,
+    interviewId: id,
+    applicationId: interview.applicationId,
+  });
   return serializeInterview(interview);
 }
 

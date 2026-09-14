@@ -20,6 +20,7 @@ describe("interview validation", () => {
     });
     expect(input.type).toBe("TECHNICAL");
     expect(input.status).toBe("SCHEDULED");
+    expect(input.outcome).toBeUndefined();
   });
 
   it("rejects an invalid meeting URL", () => {

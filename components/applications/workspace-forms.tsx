@@ -1,16 +1,21 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import { Field, SelectField, SubmitButton, TextAreaField } from "@/components/ui/fields";
 import {
   followUpTypeLabels,
   interviewOutcomeLabels,
+  interviewStatusLabels,
   interviewTypeLabels,
   toDateTimeLocal,
 } from "@/lib/labels";
 import { FOLLOW_UP_TYPES } from "@/lib/validation/follow-up";
-import { INTERVIEW_OUTCOMES, INTERVIEW_TYPES } from "@/lib/validation/interview";
+import {
+  INTERVIEW_OUTCOMES,
+  INTERVIEW_STATUSES,
+  INTERVIEW_TYPES,
+} from "@/lib/validation/interview";
 import type { FormState } from "@/server/actions/form-state";
 import {
   createFollowUpAction,
@@ -58,7 +63,7 @@ export function InterviewUpdateForm({
     type: keyof typeof interviewTypeLabels;
     interviewerName: string | null;
     meetingUrl: string | null;
-    status: string;
+    status: keyof typeof interviewStatusLabels;
     outcome: string | null;
     notes: string | null;
   };
@@ -67,6 +72,8 @@ export function InterviewUpdateForm({
     updateInterviewAction.bind(null, applicationId, interview.id),
     {} as FormState,
   );
+  const [status, setStatus] = useState(interview.status);
+  const showOutcome = status === "COMPLETED";
 
   return (
     <form action={action} className="mt-3 space-y-3">
@@ -80,6 +87,18 @@ export function InterviewUpdateForm({
         type="datetime-local"
         defaultValue={toDateTimeLocal(interview.scheduledAt)}
       />
+      <SelectField
+        id={`type-${interview.id}`}
+        name="type"
+        label="Type"
+        defaultValue={interview.type}
+      >
+        {INTERVIEW_TYPES.map((type) => (
+          <option key={type} value={type}>
+            {interviewTypeLabels[type]}
+          </option>
+        ))}
+      </SelectField>
       <Field
         id={`interviewerName-${interview.id}`}
         name="interviewerName"
@@ -96,30 +115,37 @@ export function InterviewUpdateForm({
       <TextAreaField
         id={`notes-${interview.id}`}
         name="notes"
-        label="Prep notes"
+        label={showOutcome ? "Notes" : "Prep notes"}
         defaultValue={interview.notes ?? ""}
-        rows={3}
+        rows={4}
       />
       <SelectField
-        id={`outcome-${interview.id}`}
-        name="outcome"
-        label="Outcome"
-        defaultValue={interview.outcome ?? "PENDING"}
+        id={`status-${interview.id}`}
+        name="status"
+        label="Status"
+        value={status}
+        onChange={(value) => setStatus(value as keyof typeof interviewStatusLabels)}
       >
-        {INTERVIEW_OUTCOMES.map((outcome) => (
-          <option key={outcome} value={outcome}>
-            {interviewOutcomeLabels[outcome]}
+        {INTERVIEW_STATUSES.map((value) => (
+          <option key={value} value={value}>
+            {interviewStatusLabels[value]}
           </option>
         ))}
       </SelectField>
-      {interview.status !== "COMPLETED" ? (
-        <label className="flex items-center gap-2 text-sm text-stone-700">
-          <input type="checkbox" name="status" value="COMPLETED" />
-          Mark completed
-        </label>
-      ) : (
-        <input type="hidden" name="status" value="COMPLETED" />
-      )}
+      {showOutcome ? (
+        <SelectField
+          id={`outcome-${interview.id}`}
+          name="outcome"
+          label="Outcome"
+          defaultValue={interview.outcome ?? "PENDING"}
+        >
+          {INTERVIEW_OUTCOMES.map((outcome) => (
+            <option key={outcome} value={outcome}>
+              {interviewOutcomeLabels[outcome]}
+            </option>
+          ))}
+        </SelectField>
+      ) : null}
       <SubmitButton pending={pending} idle="Save interview" />
     </form>
   );

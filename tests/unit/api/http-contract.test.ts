@@ -23,6 +23,7 @@ vi.mock("@/server/services/company-service", () => ({
 vi.mock("@/server/services/interview-service", () => ({
   listApplicationInterviews: vi.fn(),
   createInterview: vi.fn(),
+  getInterview: vi.fn(),
   updateInterview: vi.fn(),
   deleteInterview: vi.fn(),
 }));
@@ -43,6 +44,7 @@ import { GET as getCompany } from "@/app/api/companies/[id]/route";
 import { POST as createCompany } from "@/app/api/companies/route";
 import { GET as downloadDocument } from "@/app/api/documents/[id]/download/route";
 import { POST as createInterview } from "@/app/api/applications/[id]/interviews/route";
+import { GET as getInterview } from "@/app/api/interviews/[id]/route";
 import { POST as createNote } from "@/app/api/applications/[id]/notes/route";
 import { POST as changeStatus } from "@/app/api/applications/[id]/status/route";
 import { AppError, ErrorCode } from "@/lib/errors";
@@ -56,7 +58,10 @@ import {
   getCompany as getCompanyService,
 } from "@/server/services/company-service";
 import { getDocumentFile } from "@/server/services/document-service";
-import { createInterview as createInterviewService } from "@/server/services/interview-service";
+import {
+  createInterview as createInterviewService,
+  getInterview as getInterviewService,
+} from "@/server/services/interview-service";
 
 const userA = { id: "user-a", email: "a@example.com" };
 
@@ -68,6 +73,7 @@ describe("API HTTP contract", () => {
     vi.mocked(createCompanyService).mockReset();
     vi.mocked(getDocumentFile).mockReset();
     vi.mocked(createInterviewService).mockReset();
+    vi.mocked(getInterviewService).mockReset();
     vi.mocked(changeApplicationStatus).mockReset();
   });
 
@@ -236,6 +242,19 @@ describe("API HTTP contract", () => {
       { params: Promise.resolve({ id: "app-1" }) },
     );
     expect(response.status).toBe(201);
+  });
+
+  it("hides another user's interview", async () => {
+    vi.mocked(requireUser).mockResolvedValue(userA);
+    vi.mocked(getInterviewService).mockRejectedValue(
+      new AppError("NOT_FOUND", "Interview not found."),
+    );
+    const response = await getInterview(
+      new Request("http://localhost:3000/api/interviews/int-b"),
+      { params: Promise.resolve({ id: "int-b" }) },
+    );
+    expect(response.status).toBe(404);
+    expect(getInterviewService).toHaveBeenCalledWith("user-a", "int-b");
   });
 
   it("rejects empty notes", async () => {

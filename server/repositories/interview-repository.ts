@@ -29,11 +29,10 @@ export const interviewRepository = {
       take,
     });
   },
-  listForUser(userId: string, take = 50) {
+  listForUser(userId: string, take = 100) {
     return prisma.interview.findMany({
       where: {
         application: { userId, archivedAt: null },
-        status: { not: "CANCELLED" },
       },
       include: withApplication,
       orderBy: { scheduledAt: "asc" },

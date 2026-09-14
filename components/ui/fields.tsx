@@ -42,6 +42,8 @@ export function SelectField({
   label,
   error,
   defaultValue,
+  value,
+  onChange,
   children,
 }: {
   id: string;
@@ -49,6 +51,8 @@ export function SelectField({
   label: string;
   error?: string;
   defaultValue?: string;
+  value?: string;
+  onChange?: (value: string) => void;
   children: React.ReactNode;
 }) {
   return (
@@ -59,7 +63,9 @@ export function SelectField({
       <select
         id={id}
         name={name}
-        defaultValue={defaultValue}
+        defaultValue={value === undefined ? defaultValue : undefined}
+        value={value}
+        onChange={onChange ? (event) => onChange(event.target.value) : undefined}
         className="input"
       >
         {children}

@@ -12,6 +12,7 @@ import {
 import { ApplicationNotFound } from "@/components/applications/application-not-found";
 import { DocumentAttachForm } from "@/components/applications/document-attach-form";
 import { DocumentRow } from "@/components/documents/document-row";
+import { JoinInterviewLink } from "@/components/interviews/join-interview-link";
 import { StatusBadge } from "@/components/status-badge";
 import {
   buildApplicationTimeline,
@@ -20,6 +21,7 @@ import {
   groupTimelineByDay,
   visibleJobFields,
 } from "@/lib/application-detail";
+import { interviewHref } from "@/lib/interviews";
 import { buildAttentionItems, describeWhen } from "@/lib/attention";
 import { AppError } from "@/lib/errors";
 import {
@@ -199,9 +201,12 @@ export default async function ApplicationDetailPage({
       {next ? (
         <p className="text-sm text-stone-600">
           Next:{" "}
-          <span className={next.relative.overdue ? "text-[var(--danger)]" : "font-medium"}>
+          <Link
+            href={next.href}
+            className={next.relative.overdue ? "text-[var(--danger)] hover:underline" : "font-medium hover:underline"}
+          >
             {next.title}
-          </span>
+          </Link>
           {" · "}
           {next.relative.overdue ? `Overdue · ${next.relative.label}` : next.relative.label}
         </p>
@@ -322,7 +327,9 @@ export default async function ApplicationDetailPage({
                 const when = interview.scheduledAt ? describeWhen(interview.scheduledAt) : null;
                 return (
                   <li key={interview.id} className="rounded-lg bg-white p-3 ring-1 ring-border">
-                    <p className="font-medium">{interviewTypeLabels[interview.type]}</p>
+                    <Link href={interviewHref(interview.id)} className="font-medium hover:underline">
+                      {interviewTypeLabels[interview.type]}
+                    </Link>
                     <p className={when?.overdue ? "text-[var(--danger)]" : "text-stone-600"}>
                       {when ? `${when.overdue ? "Overdue · " : ""}${when.label}` : ""}
                       {interview.interviewerName ? ` · ${interview.interviewerName}` : ""}
@@ -332,14 +339,9 @@ export default async function ApplicationDetailPage({
                         : ""}
                     </p>
                     {interview.meetingUrl ? (
-                      <a
-                        href={interview.meetingUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-1 inline-block text-accent hover:underline"
-                      >
-                        Meeting link
-                      </a>
+                      <div className="mt-1">
+                        <JoinInterviewLink href={interview.meetingUrl} />
+                      </div>
                     ) : null}
                     {interview.notes ? (
                       <p className="mt-2 whitespace-pre-wrap text-stone-700">{interview.notes}</p>

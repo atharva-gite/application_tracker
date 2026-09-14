@@ -20,12 +20,15 @@ import {
 } from "@/server/services/interview-service";
 import { createNote, updateNote } from "@/server/services/note-service";
 
-function refresh(applicationId: string) {
+function refresh(applicationId: string, interviewId?: string) {
   revalidatePath(`/applications/${applicationId}`);
   revalidatePath("/applications");
   revalidatePath("/dashboard");
   revalidatePath("/interviews");
   revalidatePath("/analytics");
+  if (interviewId) {
+    revalidatePath(`/interviews/${interviewId}`);
+  }
 }
 
 export async function createInterviewAction(
@@ -60,7 +63,7 @@ export async function updateInterviewAction(
       interviewId,
       parseSchema(interviewUpdateSchema, formObject(formData)),
     );
-    refresh(applicationId);
+    refresh(applicationId, interviewId);
     return {};
   } catch (error) {
     return toFormState(error);

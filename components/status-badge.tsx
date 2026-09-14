@@ -1,5 +1,6 @@
-import { statusLabels } from "@/lib/labels";
+import { interviewStatusLabels, statusLabels } from "@/lib/labels";
 import type { APPLICATION_STATUSES } from "@/lib/validation/application";
+import type { INTERVIEW_STATUSES } from "@/lib/validation/interview";
 
 const colors: Record<(typeof APPLICATION_STATUSES)[number], string> = {
   SAVED: "bg-[var(--accent-soft)] text-accent ring-transparent",
@@ -21,6 +22,26 @@ export function StatusBadge({
       className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${colors[status]}`}
     >
       {statusLabels[status]}
+    </span>
+  );
+}
+
+const interviewColors: Record<(typeof INTERVIEW_STATUSES)[number], string> = {
+  SCHEDULED: "bg-indigo-50 text-indigo-900 ring-indigo-100",
+  COMPLETED: "bg-emerald-50 text-emerald-900 ring-emerald-100",
+  CANCELLED: "bg-stone-100 text-stone-500 ring-stone-200",
+};
+
+export function InterviewStatusBadge({
+  status,
+}: {
+  status: (typeof INTERVIEW_STATUSES)[number];
+}) {
+  return (
+    <span
+      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${interviewColors[status]}`}
+    >
+      {interviewStatusLabels[status]}
     </span>
   );
 }

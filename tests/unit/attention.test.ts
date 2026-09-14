@@ -87,5 +87,6 @@ describe("buildAttentionItems", () => {
     );
     expect(items.map((item) => item.kind)).toEqual(["follow_up", "interview"]);
     expect(items[0]?.relative.overdue).toBe(true);
+    expect(items[1]?.href).toBe("/interviews/int-1");
   });
 });

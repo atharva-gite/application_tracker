@@ -172,7 +172,7 @@ export function buildAttentionItems(
     if (!interview.scheduledAt) continue;
     items.push({
       id: `interview-${interview.id}`,
-      href: `/applications/${interview.applicationId}`,
+      href: `/interviews/${interview.id}`,
       title: `${interview.company} interview`,
       kind: "interview",
       relative: describeWhen(interview.scheduledAt, now),
