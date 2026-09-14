@@ -2,7 +2,15 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-const APP_PREFIXES = ["/dashboard"];
+const APP_PREFIXES = [
+  "/dashboard",
+  "/applications",
+  "/companies",
+  "/contacts",
+  "/interviews",
+  "/resumes",
+  "/analytics",
+];
 const AUTH_PAGES = ["/login", "/register", "/forgot-password", "/reset-password"];
 
 export async function proxy(request: NextRequest) {
@@ -41,6 +49,12 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     "/dashboard/:path*",
+    "/applications/:path*",
+    "/companies/:path*",
+    "/contacts/:path*",
+    "/interviews/:path*",
+    "/resumes/:path*",
+    "/analytics/:path*",
     "/login",
     "/register",
     "/forgot-password",

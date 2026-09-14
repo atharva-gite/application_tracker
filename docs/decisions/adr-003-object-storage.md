@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (schema now, storage later)
+Accepted
 
 ## Context
 
@@ -11,11 +11,15 @@ in PostgreSQL would bloat backups and couple file delivery to the app server.
 
 ## Decision
 
-PostgreSQL stores document metadata and a `storage_key`. File bytes will live
-in private S3-compatible object storage, accessed through authorized signed
-URLs. Phase 1 ships the metadata schema only.
+PostgreSQL stores document metadata and a `storage_key`. File bytes live behind
+`lib/storage`. The Phase 2 adapter writes to a private local directory
+(`.data/uploads`). Production selects an S3-compatible adapter when
+`STORAGE_BUCKET`, `STORAGE_ACCESS_KEY`, and `STORAGE_SECRET_KEY` are set
+(Cloudflare R2, AWS S3, or MinIO). Downloads stay authorized through
+`GET /api/documents/:id/download`. On Vercel, local disk is rejected so files
+cannot disappear on the next deploy.
 
 ## Consequences
 
-Upload/download endpoints wait until Phase 2. Changing storage providers later
-should not require a domain-model rewrite.
+Downloads are authorized through `GET /api/documents/:id/download`. Changing
+providers later should not require a schema rewrite.

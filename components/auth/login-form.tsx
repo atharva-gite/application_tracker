@@ -37,7 +37,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={pending}
-        className="flex w-full items-center justify-center rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-[var(--accent-hover)] disabled:opacity-60"
+        className="btn-primary w-full"
       >
         {pending ? "Signing in…" : "Log in"}
       </button>
@@ -71,7 +71,7 @@ function Field({
         type={type}
         autoComplete={autoComplete}
         required
-        className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm outline-none ring-accent focus:ring-2"
+        className="input"
       />
       {error ? <p className="mt-1 text-sm text-[var(--danger)]">{error}</p> : null}
     </div>

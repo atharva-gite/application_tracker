@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 
 import { publicUser, isUniqueConstraintError } from "@/lib/domain";
 import { getEmailClient } from "@/lib/email";
+import { getAppUrl } from "@/lib/env";
 import { AppError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import type {
@@ -116,8 +117,4 @@ export async function resetPassword(input: ResetPasswordInput) {
 
 function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
-}
-
-function getAppUrl() {
-  return process.env.AUTH_URL ?? "http://localhost:3000";
 }

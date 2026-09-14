@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 export default function ErrorPage({
   error,
   reset,
@@ -7,7 +9,16 @@ export default function ErrorPage({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  void error;
+  useEffect(() => {
+    const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+    if (!dsn) {
+      return;
+    }
+    void import("@/lib/monitoring").then(({ reportError }) =>
+      reportError(error, { digest: error.digest, source: "app-error-boundary" }),
+    );
+  }, [error]);
+
   return (
     <div className="flex min-h-full flex-col items-center justify-center px-6 text-center">
       <h1 className="text-2xl font-semibold">This page could not be loaded</h1>

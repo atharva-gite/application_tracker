@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
-import { ZodError, flattenError } from "zod";
+import { z, ZodError, flattenError } from "zod";
 
 import { AppError, toErrorBody } from "@/lib/errors";
 import { logger } from "@/lib/logger";
+import { reportError } from "@/lib/monitoring";
+import { parseSchema } from "@/lib/validation/helpers";
 
 export function getRequestId(request: Request) {
   return request.headers.get("x-request-id") ?? crypto.randomUUID();
@@ -52,6 +54,11 @@ export async function handleApi(
         route,
         errorCode: mapped.code,
       });
+      await reportError(error, {
+        requestId,
+        route,
+        method: request.method,
+      });
     }
 
     const response = NextResponse.json(toErrorBody(mapped), {
@@ -75,6 +82,11 @@ async function parseJsonBody(request: Request) {
 }
 
 export { parseJsonBody };
+
+export function parseQuery<T>(request: Request, schema: z.ZodType<T>) {
+  const url = new URL(request.url);
+  return parseSchema(schema, Object.fromEntries(url.searchParams.entries()));
+}
 
 function mapError(error: unknown): AppError {
   if (error instanceof AppError) {

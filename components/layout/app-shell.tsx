@@ -1,14 +1,9 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 
+import { Logo, initials } from "@/components/brand/logo";
+import { NavLinks } from "@/components/layout/nav-links";
 import { logoutAction } from "@/server/actions/auth";
-
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", enabled: true },
-  { href: "/applications", label: "Applications", enabled: false },
-  { href: "/interviews", label: "Interviews", enabled: false },
-  { href: "/companies", label: "Companies", enabled: false },
-];
 
 export function AppShell({
   children,
@@ -18,55 +13,56 @@ export function AppShell({
   userName: string;
 }) {
   return (
-    <div className="min-h-full lg:grid lg:grid-cols-[16rem_1fr]">
-      <aside className="hidden border-r border-border bg-surface lg:flex lg:flex-col lg:justify-between">
-        <div>
-          <div className="px-6 py-5 text-lg font-semibold tracking-tight">Pipeline</div>
-          <nav className="space-y-1 px-3">
-            {navItems.map((item) =>
-              item.enabled ? (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className="block rounded-md px-3 py-2 text-sm font-medium text-stone-800 hover:bg-white"
-                >
-                  {item.label}
-                </Link>
-              ) : (
-                <span
-                  key={item.label}
-                  className="flex items-center justify-between rounded-md px-3 py-2 text-sm text-stone-400"
-                >
-                  {item.label}
-                  <span className="text-xs">Soon</span>
-                </span>
-              ),
-            )}
+    <div className="min-h-full lg:grid lg:grid-cols-[17.5rem_1fr]">
+      <aside className="hidden border-r border-border/80 bg-surface/95 lg:flex lg:flex-col lg:justify-between">
+        <div className="px-4 pt-6">
+          <div className="px-2">
+            <Logo href="/dashboard" />
+          </div>
+          <Link href="/applications/new" className="btn-primary mt-6 w-full">
+            Add application
+          </Link>
+          <nav className="mt-6 space-y-1">
+            <NavLinks variant="side" />
           </nav>
         </div>
-        <div className="border-t border-border p-4">
-          <p className="truncate text-sm font-medium">{userName}</p>
-          <form action={logoutAction}>
-            <button
-              type="submit"
-              className="mt-2 text-sm text-stone-600 hover:text-stone-900"
-            >
-              Log out
-            </button>
-          </form>
+        <div className="border-t border-border p-5">
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--accent-soft)] text-xs font-semibold text-accent">
+              {initials(userName)}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium">{userName}</p>
+              <form action={logoutAction}>
+                <button type="submit" className="mt-0.5 text-sm text-stone-500 hover:text-stone-900">
+                  Log out
+                </button>
+              </form>
+            </div>
+          </div>
         </div>
       </aside>
 
       <div className="flex min-h-full flex-col">
-        <header className="flex items-center justify-between border-b border-border bg-surface px-4 py-3 lg:hidden">
-          <p className="font-semibold">Pipeline</p>
-          <form action={logoutAction}>
-            <button type="submit" className="text-sm text-stone-600">
-              Log out
-            </button>
-          </form>
+        <header className="sticky top-0 z-10 border-b border-border/80 bg-background/90 px-4 py-3 backdrop-blur lg:hidden">
+          <div className="flex items-center justify-between gap-3">
+            <Logo href="/dashboard" size="sm" />
+            <div className="flex items-center gap-2">
+              <Link href="/applications/new" className="btn-primary px-3 py-1.5 text-xs">
+                Add
+              </Link>
+              <form action={logoutAction}>
+                <button type="submit" className="text-sm text-stone-600">
+                  Log out
+                </button>
+              </form>
+            </div>
+          </div>
+          <nav className="mt-3 flex gap-2 overflow-x-auto pb-1 text-sm">
+            <NavLinks variant="mobile" />
+          </nav>
         </header>
-        <main className="flex-1 px-4 py-6 sm:px-8">{children}</main>
+        <main className="flex-1 px-5 py-8 sm:px-10 sm:py-10">{children}</main>
       </div>
     </div>
   );

@@ -12,6 +12,10 @@
 
 # testing
 /coverage
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
 
 # next.js
 /.next/
@@ -33,6 +37,13 @@ yarn-error.log*
 # env files
 .env*
 !.env.example
+
+# local document storage
+.data/
+
+# database dumps
+/backups/
+
 
 # vercel
 .vercel

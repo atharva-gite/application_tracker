@@ -23,6 +23,32 @@ export function isUniqueConstraintError(error: unknown) {
   );
 }
 
+export function isForeignKeyError(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2003"
+  );
+}
+
 export function notFound(message = "Resource not found.") {
   return new AppError("NOT_FOUND", message);
+}
+
+export function normalizeCompanyName(name: string) {
+  return name.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+export function toDateOnly(value: string) {
+  return new Date(`${value}T00:00:00.000Z`);
+}
+
+export function formatDateOnly(value: Date | null | undefined) {
+  if (!value) {
+    return null;
+  }
+  return value.toISOString().slice(0, 10);
+}
+
+export function formatDateTime(value: Date | null | undefined) {
+  return value ? value.toISOString() : null;
 }

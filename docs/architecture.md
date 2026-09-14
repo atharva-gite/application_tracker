@@ -13,23 +13,37 @@ Route / Server Action
   → PostgreSQL
 ```
 
-## Phase 1 boundary
+Document bytes go through `lib/storage`. Local disk (`.data/uploads`) is the
+development adapter. Production uses S3-compatible object storage selected by
+`STORAGE_BUCKET` / `STORAGE_ACCESS_KEY` / `STORAGE_SECRET_KEY`. PostgreSQL still
+stores only `documents.storage_key`.
 
-This phase establishes the production foundation:
+Transactional email is isolated behind `lib/email`. Development logs messages;
+production uses Resend when `RESEND_API_KEY` is set.
 
-- Authentication (register, login, logout, password reset)
-- Session cookies via Auth.js
-- Protected API routes
-- Initial Prisma schema and migrations for the full domain
-- Structured request logging and a consistent API error contract
-- UI shell for public and authenticated pages
-- GitHub Actions CI
+Unhandled server errors are reported to Sentry when `SENTRY_DSN` is set.
+`GET /api/health` is a liveness probe. `GET /api/ready` checks PostgreSQL and
+reports the storage and email drivers.
 
-Application, company, interview, and document workflows are intentionally not
-implemented yet.
+## Phase 2 boundary
 
-## Authorization
+The MVP loop is implemented:
+
+- Companies (unique per user via `normalized_name`)
+- Applications with search, filters, sorting, list and pipeline board views
+- Status changes written in a transaction with `application_status_history`
+- Application workspace: interviews, notes, contacts, follow-ups, documents
+- Dashboard, deadlines, activity, and basic conversion analytics
 
 UI route protection in `proxy.ts` is optimistic only. Every protected API
-route and server action must still authenticate and authorize on the server.
-Ownership checks live in `server/authorization`.
+route and server action authenticates and authorizes on the server.
+
+## Phase 4 boundary
+
+The production deploy path is:
+
+GitHub Actions (lint, typecheck, tests, build, e2e) → Vercel (`vercel-build`
+runs `prisma migrate deploy && next build`) → Neon PostgreSQL, R2/S3, Resend,
+Sentry.
+
+See [deployment.md](deployment.md) for the operator runbook.

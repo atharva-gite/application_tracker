@@ -37,7 +37,7 @@ export function ForgotPasswordForm() {
           type="email"
           autoComplete="email"
           required
-          className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm outline-none ring-accent focus:ring-2"
+        className="input"
         />
         {state.fieldErrors?.email?.[0] ? (
           <p className="mt-1 text-sm text-[var(--danger)]">
@@ -48,7 +48,7 @@ export function ForgotPasswordForm() {
       <button
         type="submit"
         disabled={pending}
-        className="flex w-full items-center justify-center rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
+        className="btn-primary w-full"
       >
         {pending ? "Sending…" : "Send reset instructions"}
       </button>

@@ -1,6 +1,8 @@
-import { z, flattenError } from "zod";
+import { z } from "zod";
 
-import { AppError } from "@/lib/errors";
+import { parseSchema } from "@/lib/validation/helpers";
+
+export { parseSchema };
 
 export const registerSchema = z.object({
   name: z
@@ -37,15 +39,3 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
-
-export function parseSchema<T>(schema: z.ZodType<T>, data: unknown): T {
-  const result = schema.safeParse(data);
-  if (!result.success) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      "Please correct the highlighted fields.",
-      flattenError(result.error).fieldErrors,
-    );
-  }
-  return result.data;
-}

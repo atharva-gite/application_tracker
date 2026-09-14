@@ -5,9 +5,15 @@ on:
   push:
     branches: [main]
 
+# Production deploys are handled by the Vercel GitHub integration. Require this
+# workflow to pass before promoting a production deployment.
+
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
 
     services:
       postgres:
@@ -42,3 +48,5 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

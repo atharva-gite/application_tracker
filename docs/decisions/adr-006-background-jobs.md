@@ -18,4 +18,5 @@ the transport can change independently of domain logic.
 ## Consequences
 
 Phase 1 uses a console email adapter. Password-reset messages are logged
-locally. A later Resend (or similar) adapter should not change auth services.
+locally. Production uses a Resend adapter when `RESEND_API_KEY` is set. Auth
+services call `getEmailClient()` and do not depend on the transport.
