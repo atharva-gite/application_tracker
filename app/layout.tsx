@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 
 import { APP_DESCRIPTION, APP_NAME, APP_TAGLINE } from "@/lib/brand";
@@ -40,7 +41,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="en"

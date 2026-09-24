@@ -31,6 +31,15 @@ describe("application validation", () => {
     expect(created.companyName).toBe("Google");
   });
 
+  it("treats an empty resume selection as attach later", () => {
+    const created = parseSchema(applicationCreateSchema, {
+      companyName: "Stripe",
+      roleTitle: "Software Engineering Intern",
+      documentId: "",
+    });
+    expect(created.documentId).toBeUndefined();
+  });
+
   it("rejects inverted salary ranges", () => {
     expect(() =>
       parseSchema(applicationCreateSchema, {

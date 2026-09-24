@@ -11,6 +11,7 @@ import {
 import { assertOwnedBy } from "@/server/authorization/ownership";
 import { applicationRepository } from "@/server/repositories/application-repository";
 import { companyRepository } from "@/server/repositories/company-repository";
+import { documentRepository } from "@/server/repositories/document-repository";
 import { getOwnedCompany } from "@/server/services/company-service";
 
 async function getOwnedApplication(id: string, userId: string) {
@@ -59,10 +60,25 @@ export async function getApplication(userId: string, id: string) {
   return serializeApplication(application);
 }
 
+async function requireOwnedResume(userId: string, documentId: string) {
+  const document = await documentRepository.findById(documentId);
+  if (!document) {
+    throw new AppError("NOT_FOUND", "Document not found.");
+  }
+  assertOwnedBy(document.userId, userId, "Document not found.");
+  if (document.type !== "RESUME") {
+    throw new AppError("VALIDATION_ERROR", "Select a resume for this application.");
+  }
+  return document;
+}
+
 export async function createApplication(
   userId: string,
   input: ApplicationCreateInput,
 ) {
+  if (input.documentId) {
+    await requireOwnedResume(userId, input.documentId);
+  }
   const companyId = await resolveCompanyId(userId, input);
   const application = await applicationRepository.create({
     userId,

@@ -17,7 +17,6 @@ import {
   createApplication,
   updateApplication,
 } from "@/server/services/application-service";
-import { linkApplicationDocument } from "@/server/services/document-service";
 
 export async function createApplicationAction(
   _prev: FormState,
@@ -31,9 +30,6 @@ export async function createApplicationAction(
       user.id,
       parseSchema(applicationCreateSchema, payload),
     );
-    if (payload.documentId) {
-      await linkApplicationDocument(user.id, application.id, payload.documentId);
-    }
     id = application.id;
   } catch (error) {
     return toFormState(error);

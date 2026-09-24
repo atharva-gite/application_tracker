@@ -11,6 +11,7 @@ export const navItems = [
   { href: "/contacts", label: "Contacts", icon: ContactsIcon },
   { href: "/resumes", label: "Resumes", icon: ResumesIcon },
   { href: "/analytics", label: "Analytics", icon: AnalyticsIcon },
+  { href: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
 export function NavLinks({ variant }: { variant: "side" | "mobile" }) {
@@ -125,6 +126,20 @@ function ResumesIcon() {
         strokeWidth="1.5"
       />
       <path d="M11.5 3.5V8A1 1 0 0 0 12.5 9h4" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+function SettingsIcon() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" aria-hidden>
+      <circle cx="10" cy="10" r="2.25" stroke="currentColor" strokeWidth="1.5" />
+      <path
+        d="M10 3.2v1.6M10 15.2v1.6M3.2 10h1.6M15.2 10h1.6M5.1 5.1l1.1 1.1M13.8 13.8l1.1 1.1M14.9 5.1l-1.1 1.1M6.2 13.8l-1.1 1.1"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }

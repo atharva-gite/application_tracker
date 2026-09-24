@@ -86,9 +86,19 @@ export default async function ApplicationsPage({
               : " in your pipeline."}
           </p>
         </div>
-        <Link href="/applications/new" className="btn-primary">
-          Add application
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <form action="/api/applications/export" method="get">
+            <button type="submit" className="btn-secondary">
+              Export CSV
+            </button>
+          </form>
+          <Link href="/applications/import" className="btn-secondary">
+            Import CSV
+          </Link>
+          <Link href="/applications/new" className="btn-primary">
+            Add application
+          </Link>
+        </div>
       </div>
 
       <ApplicationFilters query={query} companies={companies} />
@@ -110,9 +120,14 @@ export default async function ApplicationsPage({
             <p className="mt-2 max-w-lg text-sm leading-6 text-stone-600">
               Add your first application to start tracking your job search.
             </p>
-            <Link href="/applications/new" className="btn-primary mt-5">
-              Add application
-            </Link>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Link href="/applications/new" className="btn-primary">
+                Add application
+              </Link>
+              <Link href="/applications/import" className="btn-secondary">
+                Import CSV
+              </Link>
+            </div>
           </section>
         )
       ) : showBoard ? (

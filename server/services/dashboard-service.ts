@@ -1,10 +1,5 @@
 import type { ApplicationStatus } from "@prisma/client";
 
-import {
-  averageStageDurationDays,
-  conversionRate,
-  summarizeSources,
-} from "@/lib/analytics-math";
 import { prisma } from "@/lib/prisma";
 import { serializeFollowUp, serializeInterview } from "@/lib/serializers";
 import { APPLICATION_STATUSES } from "@/lib/validation/application";
@@ -12,6 +7,7 @@ import { applicationRepository } from "@/server/repositories/application-reposit
 import { auditRepository } from "@/server/repositories/audit-repository";
 import { followUpRepository } from "@/server/repositories/follow-up-repository";
 import { interviewRepository } from "@/server/repositories/interview-repository";
+import { reachedInterviewWhere } from "@/server/services/analytics-service";
 
 const ACTIVE_STATUSES: ApplicationStatus[] = [
   "SAVED",
@@ -35,6 +31,7 @@ export async function getDashboard(userId: string) {
     followUps,
     upcomingDeadlines,
     activity,
+    staleCandidates,
   ] = await Promise.all([
     prisma.application.count({ where: { userId, archivedAt: null } }),
     prisma.application.count({
@@ -44,11 +41,7 @@ export async function getDashboard(userId: string) {
       where: {
         userId,
         archivedAt: null,
-        OR: [
-          { status: "INTERVIEW" },
-          { status: "OFFER" },
-          { interviews: { some: {} } },
-        ],
+        ...reachedInterviewWhere(),
       },
     }),
     prisma.application.count({
@@ -69,6 +62,24 @@ export async function getDashboard(userId: string) {
       take: 20,
     }),
     auditRepository.listForUser(userId, 12),
+    prisma.application.findMany({
+      where: {
+        userId,
+        archivedAt: null,
+        status: { in: ["APPLIED", "ASSESSMENT"] },
+      },
+      select: {
+        id: true,
+        roleTitle: true,
+        status: true,
+        company: { select: { name: true } },
+        statusHistory: {
+          orderBy: { changedAt: "desc" },
+          take: 1,
+          select: { changedAt: true },
+        },
+      },
+    }),
   ]);
 
   const pipeline = Object.fromEntries(
@@ -103,103 +114,20 @@ export async function getDashboard(userId: string) {
       metadata: event.metadata,
       createdAt: event.createdAt.toISOString(),
     })),
-  };
-}
-
-export async function getAnalyticsOverview(userId: string) {
-  const dashboard = await getDashboard(userId);
-  const applied = await prisma.application.count({
-    where: {
-      userId,
-      archivedAt: null,
-      status: { not: "SAVED" },
-    },
-  });
-  const conversion = conversionRate(dashboard.metrics.interviews, applied);
-
-  return {
-    ...dashboard.metrics,
-    applied,
-    applicationToInterview: conversion,
-    pipeline: dashboard.pipeline,
-  };
-}
-
-export async function getAnalyticsApplications(userId: string) {
-  const [applications, byStatus] = await Promise.all([
-    prisma.application.findMany({
-      where: { userId, archivedAt: null },
-      select: {
-        source: true,
-        status: true,
-        interviews: { select: { id: true }, take: 1 },
-      },
-    }),
-    applicationRepository.countByStatus(userId),
-  ]);
-
-  return {
-    bySource: summarizeSources(
-      applications.map((row) => ({
-        source: row.source,
-        status: row.status,
-        hasInterview: row.interviews.length > 0,
-      })),
-    ),
-    byStatus: byStatus.map((row) => ({
-      status: row.status,
-      count: row._count._all,
+    staleCandidates: staleCandidates.map((application) => ({
+      id: application.id,
+      roleTitle: application.roleTitle,
+      company: application.company.name,
+      status: application.status,
+      lastStatusChangedAt: application.statusHistory[0]?.changedAt.toISOString() ?? null,
     })),
   };
 }
 
-export async function getAnalyticsConversion(userId: string) {
-  const [applied, interview, offer] = await Promise.all([
-    prisma.application.count({
-      where: { userId, archivedAt: null, status: { not: "SAVED" } },
-    }),
-    prisma.application.count({
-      where: {
-        userId,
-        archivedAt: null,
-        OR: [{ status: { in: ["INTERVIEW", "OFFER"] } }, { interviews: { some: {} } }],
-      },
-    }),
-    prisma.application.count({
-      where: { userId, archivedAt: null, status: "OFFER" },
-    }),
-  ]);
-
-  return {
-    applied,
-    interview,
-    offer,
-    applicationToInterview: conversionRate(interview, applied),
-    interviewToOffer: conversionRate(offer, interview),
-  };
-}
-
-export async function getAnalyticsActivity(userId: string) {
-  const events = await auditRepository.listForUser(userId, 50);
-  return {
-    activity: events.map((event) => ({
-      id: event.id,
-      entityType: event.entityType,
-      entityId: event.entityId,
-      action: event.action,
-      metadata: event.metadata,
-      createdAt: event.createdAt.toISOString(),
-    })),
-  };
-}
-
-export async function getAnalyticsStageDuration(userId: string) {
-  const history = await prisma.applicationStatusHistory.findMany({
-    where: { application: { userId, archivedAt: null } },
-    orderBy: { changedAt: "asc" },
-  });
-
-  return {
-    byStatus: averageStageDurationDays(history),
-  };
-}
+export {
+  getAnalyticsActivity,
+  getAnalyticsApplications,
+  getAnalyticsConversion,
+  getAnalyticsOverview,
+  getAnalyticsStageDuration,
+} from "@/server/services/analytics-service";

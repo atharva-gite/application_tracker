@@ -1,10 +1,12 @@
 import Link from "next/link";
 
 import { ActivityList } from "@/components/activity-list";
-import { buildAttentionItems } from "@/lib/attention";
+import { CompleteFollowUpButton } from "@/components/applications/complete-follow-up-button";
+import { isDashboardFollowUp } from "@/lib/application-detail";
+import { buildAttentionItems, isStaleApplication } from "@/lib/attention";
 import { followUpTypeLabels, statusLabels } from "@/lib/labels";
-import { completeFollowUpAction } from "@/server/actions/workspace";
 import { requireUser } from "@/server/authorization/require-user";
+import { getCurrentUser } from "@/server/services/auth-service";
 import { getDashboard } from "@/server/services/dashboard-service";
 
 export const metadata = { title: "Dashboard" };
@@ -13,34 +15,70 @@ const kindStyles = {
   interview: "bg-violet-50 text-violet-800",
   deadline: "bg-amber-50 text-amber-800",
   follow_up: "bg-blue-50 text-blue-800",
+  stale: "bg-stone-100 text-stone-800",
 } as const;
 
 const kindLabels = {
   interview: "Interview",
   deadline: "Deadline",
   follow_up: "Follow-up",
+  stale: "Stalled",
 } as const;
 
 export default async function DashboardPage() {
-  const user = await requireUser();
+  const sessionUser = await requireUser();
+  const user = await getCurrentUser(sessionUser.id);
+  const timeZone = user.timezone;
   const data = await getDashboard(user.id);
-  const attention = buildAttentionItems({
-    interviews: data.upcomingInterviews.map((item) => ({
-      id: item.id,
-      applicationId: item.applicationId,
-      scheduledAt: item.scheduledAt,
-      company: item.application?.company.name ?? "Interview",
-    })),
-    deadlines: data.upcomingDeadlines,
-    followUps: data.followUps.map((item) => ({
-      id: item.id,
-      applicationId: item.applicationId,
-      dueAt: item.dueAt,
-      completedAt: item.completedAt,
-      company: item.application?.company.name ?? "Application",
-      typeLabel: followUpTypeLabels[item.type],
-    })),
-  });
+  const now = new Date();
+  const attention = buildAttentionItems(
+    {
+      interviews: data.upcomingInterviews.map((item) => ({
+        id: item.id,
+        applicationId: item.applicationId,
+        scheduledAt: item.scheduledAt,
+        company: item.application?.company.name ?? "Interview",
+      })),
+      deadlines: data.upcomingDeadlines,
+      followUps: data.followUps
+        .filter((item) => isDashboardFollowUp(item.dueAt, item.completedAt, now, timeZone))
+        .map((item) => ({
+          id: item.id,
+          applicationId: item.applicationId,
+          dueAt: item.dueAt,
+          completedAt: item.completedAt,
+          company: item.application?.company.name ?? "Application",
+          typeLabel: followUpTypeLabels[item.type],
+        })),
+      stale: data.staleCandidates.flatMap((candidate) => {
+        if (
+          !candidate.lastStatusChangedAt ||
+          !isStaleApplication(
+            {
+              status: candidate.status,
+              archivedAt: null,
+              lastStatusChangedAt: candidate.lastStatusChangedAt,
+            },
+            now,
+            timeZone,
+          )
+        ) {
+          return [];
+        }
+        return [
+          {
+            id: candidate.id,
+            company: candidate.company,
+            roleTitle: candidate.roleTitle,
+            statusLabel: statusLabels[candidate.status],
+            changedAt: candidate.lastStatusChangedAt,
+          },
+        ];
+      }),
+    },
+    now,
+    timeZone,
+  );
   const emptySearch = data.metrics.applications === 0;
   const firstName = user.name?.trim().split(/\s+/)[0];
 
@@ -76,8 +114,8 @@ export default async function DashboardPage() {
           </div>
         ) : attention.length === 0 ? (
           <p className="mt-3 text-sm text-stone-600">
-            Nothing is due. Schedule an interview or follow-up from an application
-            when you have a next step.
+            Nothing is due, and no application has gone quiet. Schedule an interview
+            or follow-up when you have a next step.
           </p>
         ) : (
           <ul className="mt-4 space-y-2 text-sm">
@@ -106,11 +144,10 @@ export default async function DashboardPage() {
                   </div>
                 </div>
                 {item.followUp ? (
-                  <form action={completeFollowUpAction}>
-                    <input type="hidden" name="followUpId" value={item.followUp.followUpId} />
-                    <input type="hidden" name="applicationId" value={item.followUp.applicationId} />
-                    <button className="text-sm font-medium text-accent">Complete</button>
-                  </form>
+                  <CompleteFollowUpButton
+                    followUpId={item.followUp.followUpId}
+                    applicationId={item.followUp.applicationId}
+                  />
                 ) : null}
               </li>
             ))}

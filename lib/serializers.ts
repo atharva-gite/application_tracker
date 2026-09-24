@@ -153,7 +153,9 @@ export function serializeFollowUp(
   };
 }
 
-export function serializeDocument(document: Document) {
+export function serializeDocument(
+  document: Document & { _count?: { applications: number } },
+) {
   return {
     id: document.id,
     name: document.name,
@@ -162,5 +164,6 @@ export function serializeDocument(document: Document) {
     mimeType: document.mimeType,
     fileSize: document.fileSize,
     createdAt: formatDateTime(document.createdAt),
+    applicationCount: document._count?.applications,
   };
 }

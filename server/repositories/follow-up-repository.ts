@@ -30,20 +30,44 @@ export const followUpRepository = {
       take,
     });
   },
-  create(userId: string, applicationId: string, input: FollowUpInput) {
+  findRecentDuplicate(input: {
+    userId: string;
+    applicationId: string;
+    type: FollowUpInput["type"];
+    dueAt: Date;
+    note: string | null;
+    since: Date;
+  }) {
+    return prisma.followUp.findFirst({
+      where: {
+        userId: input.userId,
+        applicationId: input.applicationId,
+        type: input.type,
+        dueAt: input.dueAt,
+        note: input.note,
+        completedAt: null,
+        createdAt: { gte: input.since },
+      },
+      orderBy: { createdAt: "desc" },
+      include: withApplication,
+    });
+  },
+  create(userId: string, applicationId: string, input: FollowUpInput, dueAt: Date) {
     return prisma.followUp.create({
       data: {
         userId,
         applicationId,
-        dueAt: new Date(input.dueAt),
+        dueAt,
         type: input.type,
         note: input.note,
       },
+      include: withApplication,
     });
   },
   update(
     id: string,
-    input: Partial<FollowUpInput> & { completed?: boolean },
+    input: Partial<Pick<FollowUpInput, "type" | "note">> & { completed?: boolean },
+    dueAt?: Date,
   ) {
     const completedAt =
       input.completed === undefined
@@ -54,7 +78,7 @@ export const followUpRepository = {
     return prisma.followUp.update({
       where: { id },
       data: {
-        ...(input.dueAt ? { dueAt: new Date(input.dueAt) } : {}),
+        ...(dueAt ? { dueAt } : {}),
         type: input.type,
         note: input.note,
         ...(completedAt !== undefined ? { completedAt } : {}),

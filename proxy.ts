@@ -10,6 +10,7 @@ const APP_PREFIXES = [
   "/interviews",
   "/resumes",
   "/analytics",
+  "/settings",
 ];
 const AUTH_PAGES = ["/login", "/register", "/forgot-password", "/reset-password"];
 
@@ -55,6 +56,7 @@ export const config = {
     "/interviews/:path*",
     "/resumes/:path*",
     "/analytics/:path*",
+    "/settings/:path*",
     "/login",
     "/register",
     "/forgot-password",

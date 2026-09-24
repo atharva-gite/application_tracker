@@ -44,9 +44,10 @@ export const interviewOutcomeLabels: Record<(typeof INTERVIEW_OUTCOMES)[number],
 };
 
 export const followUpTypeLabels: Record<(typeof FOLLOW_UP_TYPES)[number], string> = {
-  RECRUITER: "Recruiter",
-  THANK_YOU: "Thank you",
-  STATUS_CHECK: "Status check",
+  RECRUITER: "Follow up with recruiter",
+  THANK_YOU: "Send thank-you email",
+  STATUS_CHECK: "Check application status",
+  HIRING_MANAGER: "Contact hiring manager",
   OTHER: "Other",
 };
 
@@ -56,14 +57,4 @@ export const documentTypeLabels: Record<(typeof DOCUMENT_TYPES)[number], string>
   OTHER: "Other",
 };
 
-export function toDateTimeLocal(value: string | null | undefined) {
-  if (!value) {
-    return "";
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
+export { toDateTimeLocalInZone as toDateTimeLocal } from "@/lib/timezone";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseSchema, registerSchema, loginSchema } from "@/lib/validation/auth";
+import { parseSchema, profileSchema, registerSchema, loginSchema } from "@/lib/validation/auth";
 import { AppError } from "@/lib/errors";
 
 describe("auth validation", () => {
@@ -22,6 +22,12 @@ describe("auth validation", () => {
         email: "alex@university.edu",
         password: "short",
       }),
+    ).toThrow(AppError);
+  });
+
+  it("rejects an unknown timezone", () => {
+    expect(() =>
+      parseSchema(profileSchema, { name: "Alex", timezone: "Not/AZone" }),
     ).toThrow(AppError);
   });
 

@@ -68,6 +68,11 @@ Verify the `EMAIL_FROM` domain in Resend. Password-reset mail will not reach
 users until this is configured; locally the console adapter still logs the
 reset URL.
 
+Set `CRON_SECRET` so Vercel Cron can call `GET /api/jobs/reminders` hourly
+with `Authorization: Bearer $CRON_SECRET`. Follow-up reminder emails use the
+same email client as password reset. Do not mark a reminder sent if Resend
+fails.
+
 ## 4. Authentication and app URL
 
 ```text

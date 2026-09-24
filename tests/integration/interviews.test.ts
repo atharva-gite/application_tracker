@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
+import { PRODUCT_EVENTS } from "@/lib/product-events";
 import { interviewInputSchema } from "@/lib/validation/interview";
 import { parseSchema } from "@/lib/validation/helpers";
 import { getApplication } from "@/server/services/application-service";
@@ -51,6 +52,11 @@ describe("interview workflow", () => {
     expect(loaded.notes).toBe("Prepare graph algorithms");
     expect(loaded.status).toBe("SCHEDULED");
     expect(loaded.outcome).toBeNull();
+    expect(
+      await prisma.productEvent.count({
+        where: { userId: user.id, name: PRODUCT_EVENTS.interviewCreated, entityId: interview.id },
+      }),
+    ).toBe(1);
   });
 
   it("groups upcoming and past interviews for the owner", async (context) => {

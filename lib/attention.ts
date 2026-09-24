@@ -1,4 +1,16 @@
-export type AttentionKind = "interview" | "deadline" | "follow_up";
+import {
+  calendarDateInZone,
+  dayDiffInZone,
+  formatZonedDay,
+  formatZonedTime,
+  systemTimeZone,
+} from "@/lib/timezone";
+
+export const STALE_AFTER_DAYS = 14;
+
+const STALE_STATUSES = new Set(["APPLIED", "ASSESSMENT"]);
+
+export type AttentionKind = "interview" | "deadline" | "follow_up" | "stale";
 
 export type RelativeWhen = {
   overdue: boolean;
@@ -15,10 +27,6 @@ export type AttentionItem = {
   followUp?: { followUpId: string; applicationId: string };
 };
 
-function startOfLocalDay(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
-}
-
 function parseWhen(value: string) {
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return new Date(`${value}T00:00:00`);
@@ -26,47 +34,43 @@ function parseWhen(value: string) {
   return new Date(value);
 }
 
-function formatDay(date: Date) {
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
-function formatTime(date: Date) {
-  return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-}
-
-export function describeWhen(value: string, now = new Date()): RelativeWhen {
+export function describeWhen(
+  value: string,
+  now = new Date(),
+  timeZone = systemTimeZone(),
+): RelativeWhen {
   const date = parseWhen(value);
   const at = date.getTime();
   const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
-  const today = startOfLocalDay(now);
-  const day = startOfLocalDay(date);
-  const dayDiff = Math.round((day - today) / 86_400_000);
-  const overdue = dateOnly ? day < today : at < now.getTime();
+  const todayKey = calendarDateInZone(now, timeZone);
+  const dayKey = dateOnly ? value : calendarDateInZone(date, timeZone);
+  const dayDiff = dayDiffInZone(todayKey, dayKey);
+  const overdue = dateOnly ? dayKey < todayKey : at < now.getTime();
 
   if (overdue) {
     if (dayDiff === -1) {
       return { overdue: true, label: "Yesterday", at };
     }
-    return { overdue: true, label: formatDay(date), at };
+    return { overdue: true, label: formatZonedDay(date, timeZone), at };
   }
   if (dayDiff === 0) {
     return {
       overdue: false,
-      label: dateOnly ? "Today" : `Today · ${formatTime(date)}`,
+      label: dateOnly ? "Today" : `Today · ${formatZonedTime(date, timeZone)}`,
       at,
     };
   }
   if (dayDiff === 1) {
     return {
       overdue: false,
-      label: dateOnly ? "Tomorrow" : `Tomorrow · ${formatTime(date)}`,
+      label: dateOnly ? "Tomorrow" : `Tomorrow · ${formatZonedTime(date, timeZone)}`,
       at,
     };
   }
   if (dayDiff > 1 && dayDiff <= 7) {
     return { overdue: false, label: `In ${dayDiff} days`, at };
   }
-  return { overdue: false, label: formatDay(date), at };
+  return { overdue: false, label: formatZonedDay(date, timeZone), at };
 }
 
 export type DeadlineKind =
@@ -84,17 +88,19 @@ export type DeadlineDisplay = {
 export function describeDeadline(
   value: string | null | undefined,
   now = new Date(),
+  timeZone = systemTimeZone(),
 ): DeadlineDisplay {
   if (!value) {
     return { kind: "none", label: "—" };
   }
-  const relative = describeWhen(value, now);
+  const relative = describeWhen(value, now, timeZone);
   if (relative.overdue) {
     return { kind: "overdue", label: relative.label };
   }
   const date = parseWhen(value);
-  const dayDiff = Math.round(
-    (startOfLocalDay(date) - startOfLocalDay(now)) / 86_400_000,
+  const dayDiff = dayDiffInZone(
+    calendarDateInZone(now, timeZone),
+    /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : calendarDateInZone(date, timeZone),
   );
   if (dayDiff === 0) {
     return { kind: "due_today", label: "Today" };
@@ -120,11 +126,12 @@ export function deadlineToneClass(kind: DeadlineKind) {
   }
 }
 
-export function describePast(value: string, now = new Date()) {
+export function describePast(value: string, now = new Date(), timeZone = systemTimeZone()) {
   const date = parseWhen(value);
-  const today = startOfLocalDay(now);
-  const day = startOfLocalDay(date);
-  const dayDiff = Math.round((day - today) / 86_400_000);
+  const dayDiff = dayDiffInZone(
+    calendarDateInZone(now, timeZone),
+    /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : calendarDateInZone(date, timeZone),
+  );
 
   if (dayDiff === 0) {
     return "Today";
@@ -136,9 +143,37 @@ export function describePast(value: string, now = new Date()) {
     return `${-dayDiff} days ago`;
   }
   if (dayDiff > 0) {
-    return describeWhen(value, now).label;
+    return describeWhen(value, now, timeZone).label;
   }
-  return formatDay(date);
+  return formatZonedDay(date, timeZone);
+}
+
+export function isStaleApplication(
+  application: {
+    status: string;
+    archivedAt: string | Date | null;
+    lastStatusChangedAt: string | Date | null;
+  },
+  now = new Date(),
+  timeZone = systemTimeZone(),
+) {
+  if (application.archivedAt) {
+    return false;
+  }
+  if (!STALE_STATUSES.has(application.status)) {
+    return false;
+  }
+  if (!application.lastStatusChangedAt) {
+    return false;
+  }
+  const changedAt =
+    application.lastStatusChangedAt instanceof Date
+      ? application.lastStatusChangedAt
+      : new Date(application.lastStatusChangedAt);
+  if (Number.isNaN(changedAt.getTime())) {
+    return false;
+  }
+  return dayDiffInZone(changedAt, now, timeZone) >= STALE_AFTER_DAYS;
 }
 
 export function buildAttentionItems(
@@ -163,8 +198,16 @@ export function buildAttentionItems(
       company: string;
       typeLabel: string;
     }>;
+    stale?: Array<{
+      id: string;
+      company: string;
+      roleTitle: string;
+      statusLabel: string;
+      changedAt: string;
+    }>;
   },
   now = new Date(),
+  timeZone = systemTimeZone(),
 ): AttentionItem[] {
   const items: AttentionItem[] = [];
 
@@ -175,7 +218,7 @@ export function buildAttentionItems(
       href: `/interviews/${interview.id}`,
       title: `${interview.company} interview`,
       kind: "interview",
-      relative: describeWhen(interview.scheduledAt, now),
+      relative: describeWhen(interview.scheduledAt, now, timeZone),
     });
   }
 
@@ -186,7 +229,23 @@ export function buildAttentionItems(
       href: `/applications/${deadline.id}`,
       title: `${deadline.company} · ${deadline.roleTitle}`,
       kind: "deadline",
-      relative: describeWhen(deadline.deadline, now),
+      relative: describeWhen(deadline.deadline, now, timeZone),
+    });
+  }
+
+  for (const stale of input.stale ?? []) {
+    const changedAt = new Date(stale.changedAt);
+    const days = dayDiffInZone(changedAt, now, timeZone);
+    items.push({
+      id: `stale-${stale.id}`,
+      href: `/applications/${stale.id}`,
+      title: `${stale.company} · ${stale.roleTitle}`,
+      kind: "stale",
+      relative: {
+        overdue: false,
+        label: `${days} days in ${stale.statusLabel}`,
+        at: changedAt.getTime(),
+      },
     });
   }
 
@@ -195,9 +254,9 @@ export function buildAttentionItems(
     items.push({
       id: `followup-${followUp.id}`,
       href: `/applications/${followUp.applicationId}`,
-      title: `${followUp.company} ${followUp.typeLabel.toLowerCase()} follow-up`,
+      title: `${followUp.company} · ${followUp.typeLabel}`,
       kind: "follow_up",
-      relative: describeWhen(followUp.dueAt, now),
+      relative: describeWhen(followUp.dueAt, now, timeZone),
       followUp: {
         followUpId: followUp.id,
         applicationId: followUp.applicationId,

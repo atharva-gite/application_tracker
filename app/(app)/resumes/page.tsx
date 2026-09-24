@@ -1,5 +1,6 @@
 import { DocumentRow } from "@/components/documents/document-row";
 import { ResumeUploadForm } from "@/components/documents/resume-upload-form";
+import { documentUsageLabel } from "@/lib/application-detail";
 import { requireUser } from "@/server/authorization/require-user";
 import { listDocuments } from "@/server/services/document-service";
 
@@ -28,7 +29,15 @@ export default async function ResumesPage() {
         ) : (
           <ul className="card mt-8 divide-y divide-border overflow-hidden">
             {documents.map((doc) => (
-              <DocumentRow key={doc.id} document={doc} />
+              <DocumentRow
+                key={doc.id}
+                document={doc}
+                caption={
+                  doc.applicationCount == null
+                    ? undefined
+                    : documentUsageLabel(doc.applicationCount)
+                }
+              />
             ))}
           </ul>
         )}

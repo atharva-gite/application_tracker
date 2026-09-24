@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { contactInputSchema } from "@/lib/validation/contact";
-import { followUpInputSchema } from "@/lib/validation/follow-up";
+import { followUpInputSchema, followUpUpdateSchema } from "@/lib/validation/follow-up";
 import { parseSchema } from "@/lib/validation/helpers";
 import { interviewInputSchema, interviewUpdateSchema } from "@/lib/validation/interview";
 import { noteInputSchema, noteUpdateSchema } from "@/lib/validation/note";
@@ -11,6 +11,7 @@ import { formObject, toFormState, type FormState } from "@/server/actions/form-s
 import { requireUser } from "@/server/authorization/require-user";
 import { createContact, linkApplicationContact } from "@/server/services/contact-service";
 import {
+  completeFollowUp,
   createFollowUp,
   updateFollowUp,
 } from "@/server/services/follow-up-service";
@@ -128,11 +129,31 @@ export async function createFollowUpAction(
   }
 }
 
+export async function updateFollowUpAction(
+  applicationId: string,
+  followUpId: string,
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  try {
+    const user = await requireUser();
+    await updateFollowUp(
+      user.id,
+      followUpId,
+      parseSchema(followUpUpdateSchema, formObject(formData)),
+    );
+    refresh(applicationId);
+    return {};
+  } catch (error) {
+    return toFormState(error);
+  }
+}
+
 export async function completeFollowUpAction(formData: FormData) {
   const user = await requireUser();
   const id = String(formData.get("followUpId") ?? "");
   const applicationId = String(formData.get("applicationId") ?? "");
-  await updateFollowUp(user.id, id, { completed: true });
+  await completeFollowUp(user.id, id);
   if (applicationId) {
     refresh(applicationId);
   }

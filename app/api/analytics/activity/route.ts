@@ -1,6 +1,6 @@
 import { handleApi, json } from "@/lib/api";
 import { requireUser } from "@/server/authorization/require-user";
-import { getAnalyticsActivity } from "@/server/services/dashboard-service";
+import { getAnalyticsActivity } from "@/server/services/analytics-service";
 
 export async function GET(request: Request) {
   return handleApi(request, async () => {

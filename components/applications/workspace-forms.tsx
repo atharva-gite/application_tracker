@@ -17,11 +17,13 @@ import {
   INTERVIEW_TYPES,
 } from "@/lib/validation/interview";
 import type { FormState } from "@/server/actions/form-state";
+import { systemTimeZone } from "@/lib/timezone";
 import {
   createFollowUpAction,
   createInterviewAction,
   createLinkedContactAction,
   createNoteAction,
+  updateFollowUpAction,
   updateInterviewAction,
   updateNoteAction,
 } from "@/server/actions/workspace";
@@ -195,13 +197,29 @@ export function NoteEditForm({
   );
 }
 
+function withTimeZone(action: (formData: FormData) => void) {
+  return (formData: FormData) => {
+    formData.set("timeZone", systemTimeZone());
+    const dueAt = formData.get("dueAt");
+    if (
+      typeof dueAt === "string" &&
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(dueAt) &&
+      !/[zZ]$/.test(dueAt) &&
+      !/[+-]\d{2}:\d{2}$/.test(dueAt)
+    ) {
+      formData.set("dueAt", new Date(dueAt).toISOString());
+    }
+    return action(formData);
+  };
+}
+
 export function FollowUpForm({ applicationId }: { applicationId: string }) {
   const [state, action, pending] = useActionState(
     createFollowUpAction.bind(null, applicationId),
     {} as FormState,
   );
   return (
-    <form action={action} className="space-y-3">
+    <form action={withTimeZone(action)} className="space-y-3">
       {state.message ? (
         <p className="text-sm text-[var(--danger)]">{state.message}</p>
       ) : null}
@@ -215,6 +233,59 @@ export function FollowUpForm({ applicationId }: { applicationId: string }) {
       </SelectField>
       <TextAreaField id="note" name="note" label="Note" rows={2} />
       <SubmitButton pending={pending} idle="Add follow-up" />
+    </form>
+  );
+}
+
+export function FollowUpUpdateForm({
+  applicationId,
+  followUp,
+}: {
+  applicationId: string;
+  followUp: {
+    id: string;
+    dueAt: string | null;
+    type: keyof typeof followUpTypeLabels;
+    note: string | null;
+  };
+}) {
+  const [state, action, pending] = useActionState(
+    updateFollowUpAction.bind(null, applicationId, followUp.id),
+    {} as FormState,
+  );
+  return (
+    <form action={withTimeZone(action)} className="mt-3 space-y-3">
+      {state.message ? (
+        <p className="text-sm text-[var(--danger)]">{state.message}</p>
+      ) : null}
+      <Field
+        id={`dueAt-${followUp.id}`}
+        name="dueAt"
+        label="Due"
+        type="datetime-local"
+        defaultValue={toDateTimeLocal(followUp.dueAt)}
+        required
+      />
+      <SelectField
+        id={`type-${followUp.id}`}
+        name="type"
+        label="Type"
+        defaultValue={followUp.type}
+      >
+        {FOLLOW_UP_TYPES.map((type) => (
+          <option key={type} value={type}>
+            {followUpTypeLabels[type]}
+          </option>
+        ))}
+      </SelectField>
+      <TextAreaField
+        id={`note-${followUp.id}`}
+        name="note"
+        label="Note"
+        defaultValue={followUp.note ?? ""}
+        rows={2}
+      />
+      <SubmitButton pending={pending} idle="Save follow-up" />
     </form>
   );
 }

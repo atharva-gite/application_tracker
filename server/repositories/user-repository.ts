@@ -15,6 +15,12 @@ export const userRepository = {
   }) {
     return prisma.user.create({ data });
   },
+  updateProfile(userId: string, data: { name: string; timezone: string }) {
+    return prisma.user.update({
+      where: { id: userId },
+      data,
+    });
+  },
   updatePassword(userId: string, passwordHash: string) {
     return prisma.user.update({
       where: { id: userId },

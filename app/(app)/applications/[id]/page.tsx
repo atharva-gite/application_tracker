@@ -4,20 +4,23 @@ import type { ReactNode } from "react";
 import {
   ContactForm,
   FollowUpForm,
+  FollowUpUpdateForm,
   InterviewForm,
   InterviewUpdateForm,
   NoteEditForm,
   NoteForm,
 } from "@/components/applications/workspace-forms";
+import { CompleteFollowUpButton } from "@/components/applications/complete-follow-up-button";
 import { ApplicationNotFound } from "@/components/applications/application-not-found";
+import { ApplicationResumePanel } from "@/components/applications/application-resume-panel";
 import { DocumentAttachForm } from "@/components/applications/document-attach-form";
 import { DocumentRow } from "@/components/documents/document-row";
 import { JoinInterviewLink } from "@/components/interviews/join-interview-link";
 import { StatusBadge } from "@/components/status-badge";
 import {
   buildApplicationTimeline,
-  describeFollowUpDue,
   documentKindLabel,
+  groupFollowUpsByDue,
   groupTimelineByDay,
   visibleJobFields,
 } from "@/lib/application-detail";
@@ -36,7 +39,6 @@ import {
   archiveApplicationAction,
   changeStatusAction,
 } from "@/server/actions/applications";
-import { completeFollowUpAction } from "@/server/actions/workspace";
 import { requireUser } from "@/server/authorization/require-user";
 import {
   getApplication,
@@ -48,6 +50,7 @@ import {
   listApplicationDocuments,
   listDocuments,
 } from "@/server/services/document-service";
+import { getCurrentUser } from "@/server/services/auth-service";
 import { listApplicationFollowUps } from "@/server/services/follow-up-service";
 import { listApplicationInterviews } from "@/server/services/interview-service";
 import { listApplicationNotes } from "@/server/services/note-service";
@@ -59,7 +62,9 @@ export default async function ApplicationDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const user = await requireUser();
+  const sessionUser = await requireUser();
+  const user = await getCurrentUser(sessionUser.id);
+  const timeZone = user.timezone;
   const { id } = await params;
 
   let application;
@@ -101,32 +106,36 @@ export default async function ApplicationDetailPage({
     throw error;
   }
 
-  const attention = buildAttentionItems({
-    interviews: interviews.interviews.map((item) => ({
-      id: item.id,
-      applicationId: id,
-      scheduledAt: item.scheduledAt,
-      company: application.company.name,
-    })),
-    deadlines: application.deadline
-      ? [
-          {
-            id,
-            roleTitle: application.roleTitle,
-            company: application.company.name,
-            deadline: application.deadline,
-          },
-        ]
-      : [],
-    followUps: followUps.followUps.map((item) => ({
-      id: item.id,
-      applicationId: id,
-      dueAt: item.dueAt,
-      completedAt: item.completedAt,
-      company: application.company.name,
-      typeLabel: followUpTypeLabels[item.type],
-    })),
-  });
+  const attention = buildAttentionItems(
+    {
+      interviews: interviews.interviews.map((item) => ({
+        id: item.id,
+        applicationId: id,
+        scheduledAt: item.scheduledAt,
+        company: application.company.name,
+      })),
+      deadlines: application.deadline
+        ? [
+            {
+              id,
+              roleTitle: application.roleTitle,
+              company: application.company.name,
+              deadline: application.deadline,
+            },
+          ]
+        : [],
+      followUps: followUps.followUps.map((item) => ({
+        id: item.id,
+        applicationId: id,
+        dueAt: item.dueAt,
+        completedAt: item.completedAt,
+        company: application.company.name,
+        typeLabel: followUpTypeLabels[item.type],
+      })),
+    },
+    new Date(),
+    timeZone,
+  );
   const next = attention[0];
   const hasInterviews = interviews.interviews.length > 0;
   const needsInterviewStage =
@@ -146,15 +155,10 @@ export default async function ApplicationDetailPage({
       followUps: followUps.followUps,
     }),
   );
-  const sortedFollowUps = [...followUps.followUps].sort((a, b) => {
-    const aDue = describeFollowUpDue(a.dueAt, a.completedAt);
-    const bDue = describeFollowUpDue(b.dueAt, b.completedAt);
-    const rank = { overdue: 0, due_today: 1, upcoming: 2, completed: 3 };
-    if (rank[aDue.kind] !== rank[bDue.kind]) {
-      return rank[aDue.kind] - rank[bDue.kind];
-    }
-    return (a.dueAt ?? "").localeCompare(b.dueAt ?? "");
-  });
+  const followUpGroups = groupFollowUpsByDue(followUps.followUps, new Date(), timeZone);
+  const resume = documents.resume;
+  const otherDocuments = documents.documents.filter((doc) => doc.id !== resume?.id);
+  const resumeLibrary = library.documents.filter((doc) => doc.type === "RESUME");
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
@@ -324,7 +328,9 @@ export default async function ApplicationDetailPage({
           {interviews.interviews.length > 0 ? (
             <ul className="space-y-3 text-sm">
               {interviews.interviews.map((interview) => {
-                const when = interview.scheduledAt ? describeWhen(interview.scheduledAt) : null;
+                const when = interview.scheduledAt
+                  ? describeWhen(interview.scheduledAt, new Date(), timeZone)
+                  : null;
                 return (
                   <li key={interview.id} className="rounded-lg bg-white p-3 ring-1 ring-border">
                     <Link href={interviewHref(interview.id)} className="font-medium hover:underline">
@@ -393,22 +399,31 @@ export default async function ApplicationDetailPage({
           ) : null}
           <ContactForm applicationId={id} companies={companies.companies} />
         </Panel>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <ApplicationResumePanel
+          applicationId={id}
+          resume={resume}
+          format={resume ? documentKindLabel(resume).format : null}
+          library={resumeLibrary}
+        />
 
         <Panel
-          title="Documents"
-          empty={documents.documents.length === 0}
-          emptyTitle="No resume attached"
-          emptyText="Attach a resume"
+          title="Other documents"
+          empty={otherDocuments.length === 0}
+          emptyTitle="No other documents"
+          emptyText="Attach a cover letter or supporting file if you have one."
         >
-          {documents.documents.length > 0 ? (
+          {otherDocuments.length > 0 ? (
             <ul className="divide-y divide-border overflow-hidden rounded-xl ring-1 ring-border">
-              {documents.documents.map((doc) => {
+              {otherDocuments.map((doc) => {
                 const kind = documentKindLabel(doc);
                 return (
                   <DocumentRow
                     key={doc.id}
                     document={doc}
-                    caption={`${kind.type}${kind.format ? ` · ${kind.format}` : ""} · Used for this application`}
+                    caption={`${kind.type}${kind.format ? ` · ${kind.format}` : ""}`}
                   />
                 );
               })}
@@ -421,43 +436,75 @@ export default async function ApplicationDetailPage({
           title="Follow-ups"
           empty={followUps.followUps.length === 0}
           emptyTitle="No follow-ups"
-          emptyText="Add one when you need to check in."
+          emptyText="Add a recruiter check-in, thank-you, or status check when you have a next step."
         >
-          {sortedFollowUps.length > 0 ? (
-            <ul className="space-y-3 text-sm">
-              {sortedFollowUps.map((item) => {
-                const due = describeFollowUpDue(item.dueAt, item.completedAt);
-                const tone =
-                  due.kind === "overdue"
-                    ? "text-[var(--danger)]"
-                    : due.kind === "completed"
-                      ? "text-stone-500"
-                      : due.kind === "due_today"
-                        ? "font-medium text-stone-800"
-                        : "text-stone-600";
-                return (
-                  <li
-                    key={item.id}
-                    className="flex items-start justify-between gap-3 rounded-lg bg-white p-3 ring-1 ring-border"
-                  >
-                    <div>
-                      <p className="font-medium">{followUpTypeLabels[item.type]}</p>
-                      <p className={tone}>{due.label}</p>
-                      {item.note ? (
-                        <p className="mt-2 whitespace-pre-wrap text-stone-700">{item.note}</p>
-                      ) : null}
-                    </div>
-                    {!item.completedAt ? (
-                      <form action={completeFollowUpAction}>
-                        <input type="hidden" name="followUpId" value={item.id} />
-                        <input type="hidden" name="applicationId" value={id} />
-                        <button className="text-sm text-accent">Complete</button>
-                      </form>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
+          {followUpGroups.length > 0 ? (
+            <div className="space-y-5 text-sm">
+              {followUpGroups.map((group) => (
+                <div key={group.kind}>
+                  <h3 className="text-xs font-medium uppercase tracking-wide text-stone-500">
+                    {group.label}
+                  </h3>
+                  <ul className="mt-2 space-y-3">
+                    {group.items.map((item) => {
+                      const tone =
+                        item.due.kind === "overdue"
+                          ? "text-[var(--danger)]"
+                          : item.due.kind === "due_today"
+                            ? "font-medium text-stone-800"
+                            : "text-stone-600";
+                      return (
+                        <li
+                          key={item.id}
+                          className={`rounded-lg bg-white p-3 ring-1 ring-border ${
+                            item.due.kind === "completed" ? "opacity-60" : ""
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p
+                                className={
+                                  item.due.kind === "completed"
+                                    ? "font-medium text-stone-500"
+                                    : "font-medium"
+                                }
+                              >
+                                {followUpTypeLabels[item.type]}
+                              </p>
+                              <p className={item.due.kind === "completed" ? "text-stone-500" : tone}>
+                                {item.due.label}
+                              </p>
+                              {item.note ? (
+                                <p
+                                  className={`mt-2 whitespace-pre-wrap ${
+                                    item.due.kind === "completed"
+                                      ? "text-stone-500"
+                                      : "text-stone-700"
+                                  }`}
+                                >
+                                  {item.note}
+                                </p>
+                              ) : null}
+                            </div>
+                            {item.due.kind !== "completed" ? (
+                              <CompleteFollowUpButton followUpId={item.id} applicationId={id} />
+                            ) : null}
+                          </div>
+                          {item.due.kind !== "completed" ? (
+                            <details className="mt-3">
+                              <summary className="cursor-pointer text-sm font-medium text-stone-700">
+                                Edit
+                              </summary>
+                              <FollowUpUpdateForm applicationId={id} followUp={item} />
+                            </details>
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
           ) : null}
           <FollowUpForm applicationId={id} />
         </Panel>

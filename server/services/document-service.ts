@@ -64,15 +64,24 @@ export async function uploadDocument(
   const storageKey = `documents/${userId}/${id}${ext}`;
   await storage.put(storageKey, file.bytes);
 
-  const document = await documentRepository.create(userId, {
-    ...input,
-    filename: file.name,
-    mimeType: file.type,
-    fileSize: file.size,
-    storageKey,
-  });
-  logger.info("document.uploaded", { userId, documentId: document.id });
-  return serializeDocument(document);
+  try {
+    const document = await documentRepository.create(userId, {
+      ...input,
+      filename: file.name,
+      mimeType: file.type,
+      fileSize: file.size,
+      storageKey,
+    });
+    logger.info("document.uploaded", { userId, documentId: document.id });
+    return serializeDocument(document);
+  } catch (error) {
+    try {
+      await storage.delete(storageKey);
+    } catch {
+      logger.error("document.upload.cleanup_failed", { userId, storageKey });
+    }
+    throw error;
+  }
 }
 
 export async function getDocumentFile(userId: string, id: string) {
@@ -92,10 +101,18 @@ export async function deleteDocument(userId: string, id: string) {
   return { ok: true };
 }
 
+export function pickApplicationResume<T extends { type: string }>(documents: T[]) {
+  return documents.find((document) => document.type === "RESUME") ?? null;
+}
+
 export async function listApplicationDocuments(userId: string, applicationId: string) {
   await getOwnedApplication(applicationId, userId);
   const links = await documentRepository.listForApplication(applicationId);
-  return { documents: links.map((link) => serializeDocument(link.document)) };
+  const documents = links.map((link) => serializeDocument(link.document));
+  return {
+    resume: pickApplicationResume(documents),
+    documents,
+  };
 }
 
 export async function linkApplicationDocument(
@@ -104,8 +121,12 @@ export async function linkApplicationDocument(
   documentId: string,
 ) {
   await getOwnedApplication(applicationId, userId);
-  await getOwnedDocument(documentId, userId);
-  await documentRepository.linkToApplication(applicationId, documentId);
+  const document = await getOwnedDocument(documentId, userId);
+  if (document.type === "RESUME") {
+    await documentRepository.replaceApplicationResume(applicationId, documentId);
+  } else {
+    await documentRepository.linkToApplication(applicationId, documentId);
+  }
   return { ok: true };
 }
 

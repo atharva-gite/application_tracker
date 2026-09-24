@@ -1,10 +1,12 @@
-import { handleApi, json } from "@/lib/api";
+import { handleApi, json, parseQuery } from "@/lib/api";
+import { analyticsQuerySchema } from "@/lib/validation/analytics";
 import { requireUser } from "@/server/authorization/require-user";
-import { getAnalyticsApplications } from "@/server/services/dashboard-service";
+import { getAnalyticsApplications } from "@/server/services/analytics-service";
 
 export async function GET(request: Request) {
   return handleApi(request, async () => {
     const user = await requireUser();
-    return json(await getAnalyticsApplications(user.id));
+    const { range } = parseQuery(request, analyticsQuerySchema);
+    return json(await getAnalyticsApplications(user.id, range));
   });
 }

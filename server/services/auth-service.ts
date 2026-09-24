@@ -10,10 +10,13 @@ import { logger } from "@/lib/logger";
 import type {
   ForgotPasswordInput,
   LoginInput,
+  ProfileInput,
   RegisterInput,
   ResetPasswordInput,
 } from "@/lib/validation/auth";
+import { PRODUCT_EVENTS } from "@/lib/product-events";
 import { passwordResetRepository } from "@/server/repositories/password-reset-repository";
+import { productEventRepository } from "@/server/repositories/product-event-repository";
 import { userRepository } from "@/server/repositories/user-repository";
 
 const BCRYPT_ROUNDS = 12;
@@ -30,6 +33,10 @@ export async function registerUser(input: RegisterInput) {
       timezone: input.timezone ?? "UTC",
     });
 
+    await productEventRepository.record({
+      userId: user.id,
+      name: PRODUCT_EVENTS.signupCompleted,
+    });
     logger.info("auth.register.succeeded", { userId: user.id });
     return publicUser(user);
   } catch (error) {
@@ -54,6 +61,15 @@ export async function verifyCredentials(input: LoginInput) {
     return null;
   }
 
+  return publicUser(user);
+}
+
+export async function updateProfile(userId: string, input: ProfileInput) {
+  const user = await userRepository.updateProfile(userId, {
+    name: input.name,
+    timezone: input.timezone,
+  });
+  logger.info("auth.profile.updated", { userId });
   return publicUser(user);
 }
 

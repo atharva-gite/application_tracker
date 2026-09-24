@@ -21,6 +21,10 @@ stores only `documents.storage_key`.
 Transactional email is isolated behind `lib/email`. Development logs messages;
 production uses Resend when `RESEND_API_KEY` is set.
 
+Follow-up reminders use the existing `notifications` table. A Vercel Cron
+request to `GET /api/jobs/reminders` (Bearer `CRON_SECRET`) sends due
+follow-up emails. `sent_at` is set only after the email client succeeds.
+
 Unhandled server errors are reported to Sentry when `SENTRY_DSN` is set.
 `GET /api/health` is a liveness probe. `GET /api/ready` checks PostgreSQL and
 reports the storage and email drivers.
@@ -33,7 +37,9 @@ The MVP loop is implemented:
 - Applications with search, filters, sorting, list and pipeline board views
 - Status changes written in a transaction with `application_status_history`
 - Application workspace: interviews, notes, contacts, follow-ups, documents
-- Dashboard, deadlines, activity, and basic conversion analytics
+- One resume per application via `application_documents` (optional; attach later)
+- Dashboard, deadlines, activity, and job-search analytics (conversion, sources,
+  time in stage, time range)
 
 UI route protection in `proxy.ts` is optimistic only. Every protected API
 route and server action authenticates and authorizes on the server.

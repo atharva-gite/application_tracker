@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { prisma } from "@/lib/prisma";
+import { PRODUCT_EVENTS } from "@/lib/product-events";
 import { registerUser, verifyCredentials } from "@/server/services/auth-service";
 
 describe("auth service", () => {
@@ -22,6 +23,11 @@ describe("auth service", () => {
 
     expect(user.email).toBe(email);
     expect(user).not.toHaveProperty("passwordHash");
+    expect(
+      await prisma.productEvent.count({
+        where: { userId: user.id, name: PRODUCT_EVENTS.signupCompleted },
+      }),
+    ).toBe(1);
 
     const stored = await prisma.user.findUnique({ where: { id: user.id } });
     expect(stored?.passwordHash).toBeTruthy();

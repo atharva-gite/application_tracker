@@ -19,6 +19,9 @@ export const documentRepository = {
         orderBy: { createdAt: "desc" },
         skip,
         take: query.pageSize,
+        include: {
+          _count: { select: { applications: true } },
+        },
       }),
       prisma.document.count({ where }),
     ]);
@@ -27,6 +30,7 @@ export const documentRepository = {
     return prisma.applicationDocument.findMany({
       where: { applicationId },
       include: { document: true },
+      orderBy: { document: { createdAt: "desc" } },
     });
   },
   create(
@@ -51,7 +55,10 @@ export const documentRepository = {
     });
   },
   delete(id: string) {
-    return prisma.document.delete({ where: { id } });
+    return prisma.$transaction(async (tx) => {
+      await tx.applicationDocument.deleteMany({ where: { documentId: id } });
+      return tx.document.delete({ where: { id } });
+    });
   },
   linkToApplication(applicationId: string, documentId: string) {
     return prisma.applicationDocument.upsert({
@@ -60,9 +67,25 @@ export const documentRepository = {
       update: {},
     });
   },
+  replaceApplicationResume(applicationId: string, documentId: string) {
+    return prisma.$transaction(async (tx) => {
+      await tx.applicationDocument.deleteMany({
+        where: {
+          applicationId,
+          document: { type: "RESUME" },
+          NOT: { documentId },
+        },
+      });
+      return tx.applicationDocument.upsert({
+        where: { applicationId_documentId: { applicationId, documentId } },
+        create: { applicationId, documentId },
+        update: {},
+      });
+    });
+  },
   unlinkFromApplication(applicationId: string, documentId: string) {
-    return prisma.applicationDocument.delete({
-      where: { applicationId_documentId: { applicationId, documentId } },
+    return prisma.applicationDocument.deleteMany({
+      where: { applicationId, documentId },
     });
   },
 };

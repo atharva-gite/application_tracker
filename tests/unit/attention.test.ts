@@ -5,6 +5,7 @@ import {
   describeDeadline,
   describePast,
   describeWhen,
+  isStaleApplication,
 } from "@/lib/attention";
 
 describe("describeWhen", () => {
@@ -86,7 +87,122 @@ describe("buildAttentionItems", () => {
       now,
     );
     expect(items.map((item) => item.kind)).toEqual(["follow_up", "interview"]);
+    expect(items[0]?.title).toBe("Meta · Recruiter");
     expect(items[0]?.relative.overdue).toBe(true);
     expect(items[1]?.href).toBe("/interviews/int-1");
+  });
+
+  it("links stalled applications after overdue items", () => {
+    const now = new Date("2026-09-14T12:00:00Z");
+    const items = buildAttentionItems(
+      {
+        interviews: [
+          {
+            id: "int-1",
+            applicationId: "app-1",
+            scheduledAt: "2026-09-16T10:00:00Z",
+            company: "Google",
+          },
+        ],
+        deadlines: [],
+        followUps: [
+          {
+            id: "fu-1",
+            applicationId: "app-2",
+            dueAt: "2026-09-13T09:00:00Z",
+            completedAt: null,
+            company: "Meta",
+            typeLabel: "Recruiter",
+          },
+        ],
+        stale: [
+          {
+            id: "app-3",
+            company: "Notion",
+            roleTitle: "Product Engineer Intern",
+            statusLabel: "Applied",
+            changedAt: "2026-08-31T12:00:00Z",
+          },
+        ],
+      },
+      now,
+      "UTC",
+    );
+
+    expect(items.map((item) => item.kind)).toEqual(["follow_up", "stale", "interview"]);
+    expect(items[1]).toMatchObject({
+      href: "/applications/app-3",
+      title: "Notion · Product Engineer Intern",
+      relative: { overdue: false, label: "14 days in Applied" },
+    });
+  });
+});
+
+describe("isStaleApplication", () => {
+  const now = new Date("2026-09-14T12:00:00Z");
+
+  it("is stale on day 14 in Applied or Assessment, and not on day 13", () => {
+    expect(
+      isStaleApplication(
+        {
+          status: "APPLIED",
+          archivedAt: null,
+          lastStatusChangedAt: "2026-08-31T12:00:00Z",
+        },
+        now,
+        "UTC",
+      ),
+    ).toBe(true);
+    expect(
+      isStaleApplication(
+        {
+          status: "ASSESSMENT",
+          archivedAt: null,
+          lastStatusChangedAt: "2026-08-31T12:00:00Z",
+        },
+        now,
+        "UTC",
+      ),
+    ).toBe(true);
+    expect(
+      isStaleApplication(
+        {
+          status: "APPLIED",
+          archivedAt: null,
+          lastStatusChangedAt: "2026-09-01T12:00:00Z",
+        },
+        now,
+        "UTC",
+      ),
+    ).toBe(false);
+  });
+
+  it("excludes rejected, saved, and archived applications", () => {
+    const quiet = "2026-08-01T12:00:00Z";
+    expect(
+      isStaleApplication(
+        { status: "REJECTED", archivedAt: null, lastStatusChangedAt: quiet },
+        now,
+        "UTC",
+      ),
+    ).toBe(false);
+    expect(
+      isStaleApplication(
+        { status: "SAVED", archivedAt: null, lastStatusChangedAt: quiet },
+        now,
+        "UTC",
+      ),
+    ).toBe(false);
+    expect(
+      isStaleApplication(
+        {
+          status: "APPLIED",
+          archivedAt: "2026-09-10T12:00:00Z",
+          lastStatusChangedAt: quiet,
+        },
+        now,
+        "UTC",
+      ),
+    ).toBe(false);
   });
 });

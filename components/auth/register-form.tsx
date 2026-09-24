@@ -10,7 +10,16 @@ export function RegisterForm() {
   const [state, action, pending] = useActionState(registerAction, initialState);
 
   return (
-    <form action={action} className="space-y-4">
+    <form
+      action={(formData) => {
+        formData.set(
+          "timezone",
+          Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+        );
+        return action(formData);
+      }}
+      className="space-y-4"
+    >
       {state.message ? (
         <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-[var(--danger)]">
           {state.message}

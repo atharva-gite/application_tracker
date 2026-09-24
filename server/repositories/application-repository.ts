@@ -2,6 +2,8 @@ import type { ApplicationStatus, Prisma } from "@prisma/client";
 
 import { toDateOnly } from "@/lib/domain";
 import { prisma } from "@/lib/prisma";
+import { PRODUCT_EVENTS } from "@/lib/product-events";
+import { productEventRepository } from "@/server/repositories/product-event-repository";
 import type {
   ApplicationCreateInput,
   ApplicationListQuery,
@@ -169,6 +171,13 @@ export const applicationRepository = {
       _count: { _all: true },
     });
   },
+  listForExport(userId: string) {
+    return prisma.application.findMany({
+      where: { userId, archivedAt: null },
+      include: { company: true },
+      orderBy: { createdAt: "asc" },
+    });
+  },
   create(data: {
     userId: string;
     companyId: string;
@@ -204,15 +213,35 @@ export const applicationRepository = {
         },
       });
 
+      if (data.input.documentId) {
+        await tx.applicationDocument.create({
+          data: {
+            applicationId: application.id,
+            documentId: data.input.documentId,
+          },
+        });
+      }
+
       await tx.auditEvent.create({
         data: {
           userId: data.userId,
           entityType: "application",
           entityId: application.id,
           action: "created",
-          metadata: { status: application.status },
+          metadata: {
+            status: application.status,
+            documentId: data.input.documentId,
+          },
         },
       });
+      await productEventRepository.record(
+        {
+          userId: data.userId,
+          name: PRODUCT_EVENTS.applicationCreated,
+          entityId: application.id,
+        },
+        tx,
+      );
 
       return tx.application.findUniqueOrThrow({
         where: { id: application.id },
@@ -282,6 +311,16 @@ export const applicationRepository = {
           },
         },
       });
+      if (nextStatus !== current.status) {
+        await productEventRepository.record(
+          {
+            userId,
+            name: PRODUCT_EVENTS.applicationStatusChanged,
+            entityId: id,
+          },
+          tx,
+        );
+      }
 
       return tx.application.findUniqueOrThrow({
         where: { id: application.id },
@@ -319,6 +358,14 @@ export const applicationRepository = {
           metadata: { fromStatus: current.status, toStatus },
         },
       });
+      await productEventRepository.record(
+        {
+          userId,
+          name: PRODUCT_EVENTS.applicationStatusChanged,
+          entityId: id,
+        },
+        tx,
+      );
 
       return tx.application.findUniqueOrThrow({
         where: { id },

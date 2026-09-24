@@ -6,6 +6,7 @@ import {
   interviewTypeLabels,
   statusLabels,
 } from "@/lib/labels";
+import { systemTimeZone } from "@/lib/timezone";
 import type { APPLICATION_STATUSES } from "@/lib/validation/application";
 import type { DOCUMENT_TYPES } from "@/lib/validation/document";
 import type { FOLLOW_UP_TYPES } from "@/lib/validation/follow-up";
@@ -195,14 +196,14 @@ export function buildApplicationTimeline(input: {
       events.push({
         id: `followup-created-${followUp.id}`,
         at: followUp.createdAt,
-        title: `${type} follow-up created`,
+        title: `${type} created`,
       });
     }
     if (followUp.completedAt) {
       events.push({
         id: `followup-completed-${followUp.id}`,
         at: followUp.completedAt,
-        title: `${type} follow-up completed`,
+        title: `${type} completed`,
       });
     }
   }
@@ -232,6 +233,7 @@ export function describeFollowUpDue(
   dueAt: string | null | undefined,
   completedAt: string | null | undefined,
   now = new Date(),
+  timeZone = systemTimeZone(),
 ): FollowUpDue {
   if (completedAt) {
     return { kind: "completed", label: "Completed", relative: null };
@@ -239,7 +241,7 @@ export function describeFollowUpDue(
   if (!dueAt) {
     return { kind: "upcoming", label: "No due date", relative: null };
   }
-  const relative = describeWhen(dueAt, now);
+  const relative = describeWhen(dueAt, now, timeZone);
   if (relative.overdue) {
     return { kind: "overdue", label: `Overdue · ${relative.label}`, relative };
   }
@@ -254,6 +256,60 @@ export function describeFollowUpDue(
     };
   }
   return { kind: "upcoming", label: relative.label, relative };
+}
+
+export const FOLLOW_UP_DUE_ORDER: FollowUpDueKind[] = [
+  "overdue",
+  "due_today",
+  "upcoming",
+  "completed",
+];
+
+export const followUpDueGroupLabels: Record<FollowUpDueKind, string> = {
+  overdue: "Overdue",
+  due_today: "Due today",
+  upcoming: "Upcoming",
+  completed: "Completed",
+};
+
+export function groupFollowUpsByDue<
+  T extends { dueAt: string | null; completedAt: string | null },
+>(
+  followUps: T[],
+  now = new Date(),
+  timeZone = systemTimeZone(),
+): Array<{ kind: FollowUpDueKind; label: string; items: Array<T & { due: FollowUpDue }> }> {
+  const buckets = new Map<FollowUpDueKind, Array<T & { due: FollowUpDue }>>();
+  for (const kind of FOLLOW_UP_DUE_ORDER) {
+    buckets.set(kind, []);
+  }
+
+  for (const followUp of followUps) {
+    const due = describeFollowUpDue(followUp.dueAt, followUp.completedAt, now, timeZone);
+    buckets.get(due.kind)?.push({ ...followUp, due });
+  }
+
+  for (const items of buckets.values()) {
+    items.sort((a, b) => (a.dueAt ?? "").localeCompare(b.dueAt ?? ""));
+  }
+
+  return FOLLOW_UP_DUE_ORDER.flatMap((kind) => {
+    const items = buckets.get(kind) ?? [];
+    if (items.length === 0) {
+      return [];
+    }
+    return [{ kind, label: followUpDueGroupLabels[kind], items }];
+  });
+}
+
+export function isDashboardFollowUp(
+  dueAt: string | null | undefined,
+  completedAt: string | null | undefined,
+  now = new Date(),
+  timeZone = systemTimeZone(),
+) {
+  const kind = describeFollowUpDue(dueAt, completedAt, now, timeZone).kind;
+  return kind === "overdue" || kind === "due_today";
 }
 
 export function documentKindLabel(document: {
@@ -278,4 +334,11 @@ export function documentKindLabel(document: {
     return { type, format: "Word" };
   }
   return { type, format: null };
+}
+
+export function documentUsageLabel(count: number) {
+  if (count === 1) {
+    return "Used in 1 application";
+  }
+  return `Used in ${count} applications`;
 }

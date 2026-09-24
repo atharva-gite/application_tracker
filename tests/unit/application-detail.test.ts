@@ -5,7 +5,10 @@ import {
   describeFollowUpDue,
   describeStatusHistoryEntry,
   documentKindLabel,
+  documentUsageLabel,
+  groupFollowUpsByDue,
   groupTimelineByDay,
+  isDashboardFollowUp,
   visibleJobFields,
 } from "@/lib/application-detail";
 
@@ -77,10 +80,10 @@ describe("application timeline", () => {
     });
 
     expect(events.map((event) => event.title)).toEqual([
-      "Recruiter follow-up completed",
+      "Follow up with recruiter completed",
       "Technical interview scheduled",
       "Moved from Applied → Interview",
-      "Recruiter follow-up created",
+      "Follow up with recruiter created",
       "Moved from Saved → Applied",
       "Application saved",
     ]);
@@ -119,6 +122,44 @@ describe("describeFollowUpDue", () => {
       relative: null,
     });
   });
+
+  it("classifies due times using the user timezone", () => {
+    const dueAt = "2026-09-14T23:00:00.000Z";
+    const now = new Date("2026-09-14T10:00:00.000Z");
+    expect(describeFollowUpDue(dueAt, null, now, "UTC").kind).toBe("due_today");
+    expect(describeFollowUpDue(dueAt, null, now, "Asia/Tokyo").kind).toBe("upcoming");
+  });
+});
+
+describe("groupFollowUpsByDue", () => {
+  it("groups overdue, today, upcoming, and completed follow-ups", () => {
+    const now = new Date("2026-09-14T12:00:00");
+    const groups = groupFollowUpsByDue(
+      [
+        { id: "1", dueAt: "2026-09-13T09:00:00", completedAt: null },
+        { id: "2", dueAt: "2026-09-14T18:00:00", completedAt: null },
+        { id: "3", dueAt: "2026-09-16T09:00:00", completedAt: null },
+        { id: "4", dueAt: "2026-09-10T09:00:00", completedAt: "2026-09-11T09:00:00" },
+      ],
+      now,
+    );
+    expect(groups.map((group) => [group.kind, group.items.map((item) => item.id)])).toEqual([
+      ["overdue", ["1"]],
+      ["due_today", ["2"]],
+      ["upcoming", ["3"]],
+      ["completed", ["4"]],
+    ]);
+  });
+});
+
+describe("isDashboardFollowUp", () => {
+  it("includes overdue and today, and excludes upcoming and completed", () => {
+    const now = new Date("2026-09-14T12:00:00");
+    expect(isDashboardFollowUp("2026-09-13T09:00:00", null, now)).toBe(true);
+    expect(isDashboardFollowUp("2026-09-14T18:00:00", null, now)).toBe(true);
+    expect(isDashboardFollowUp("2026-09-16T09:00:00", null, now)).toBe(false);
+    expect(isDashboardFollowUp("2026-09-13T09:00:00", "2026-09-14T08:00:00", now)).toBe(false);
+  });
 });
 
 describe("documentKindLabel", () => {
@@ -130,5 +171,13 @@ describe("documentKindLabel", () => {
         filename: "resume.pdf",
       }),
     ).toEqual({ type: "Resume", format: "PDF" });
+  });
+});
+
+describe("documentUsageLabel", () => {
+  it("uses actual application counts", () => {
+    expect(documentUsageLabel(0)).toBe("Used in 0 applications");
+    expect(documentUsageLabel(1)).toBe("Used in 1 application");
+    expect(documentUsageLabel(8)).toBe("Used in 8 applications");
   });
 });

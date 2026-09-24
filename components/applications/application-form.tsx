@@ -127,8 +127,14 @@ export function ApplicationForm({
           defaultValue={values?.deadline ?? ""}
         />
       </div>
-      {!applicationId && documents.length > 0 ? (
-        <SelectField id="documentId" name="documentId" label="Resume">
+      {!applicationId ? (
+        <SelectField
+          id="documentId"
+          name="documentId"
+          label="Resume"
+          defaultValue=""
+          error={state.fieldErrors?.documentId?.[0]}
+        >
           <option value="">Attach later</option>
           {documents.map((document) => (
             <option key={document.id} value={document.id}>
@@ -136,6 +142,12 @@ export function ApplicationForm({
             </option>
           ))}
         </SelectField>
+      ) : null}
+      {!applicationId && documents.length === 0 ? (
+        <p className="-mt-2 text-sm text-stone-500">
+          Optional. Upload a resume on the Resumes page, then attach it here or
+          from the application.
+        </p>
       ) : null}
       <details className="rounded-xl border border-border bg-white px-4 py-3" open={hasExtra}>
         <summary className="cursor-pointer text-sm font-medium">More details</summary>

@@ -57,6 +57,7 @@ enum FollowUpType {
   RECRUITER
   THANK_YOU
   STATUS_CHECK
+  HIRING_MANAGER
   OTHER
 }
 
@@ -82,6 +83,7 @@ model User {
   notifications       Notification[]
   auditEvents         AuditEvent[]
   passwordResetTokens PasswordResetToken[]
+  productEvents       ProductEvent[]
 
   @@map("users")
 }
@@ -302,9 +304,11 @@ model ApplicationDocument {
   documentId    String @map("document_id")
 
   application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  // Deleting a document removes only this join row, never the application.
   document    Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@id([applicationId, documentId])
+  @@index([documentId])
   @@map("application_documents")
 }
 
@@ -332,6 +336,8 @@ model Notification {
   type         String
   title        String
   message      String    @db.Text
+  entityType   String?   @map("entity_type")
+  entityId     String?   @map("entity_id")
   scheduledFor DateTime? @map("scheduled_for")
   sentAt       DateTime? @map("sent_at")
   readAt       DateTime? @map("read_at")
@@ -339,7 +345,9 @@ model Notification {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([type, entityId])
   @@index([userId, readAt])
+  @@index([scheduledFor, sentAt])
   @@map("notifications")
 }
 
@@ -357,4 +365,18 @@ model AuditEvent {
   @@index([userId, createdAt])
   @@index([entityType, entityId])
   @@map("audit_events")
+}
+
+model ProductEvent {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  name      String
+  entityId  String?  @map("entity_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([name, createdAt])
+  @@map("product_events")
 }

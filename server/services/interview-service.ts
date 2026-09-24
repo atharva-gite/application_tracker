@@ -1,6 +1,8 @@
 import { shouldAdvanceToInterview } from "@/lib/analytics-math";
 import { AppError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
+import { PRODUCT_EVENTS } from "@/lib/product-events";
+import { productEventRepository } from "@/server/repositories/product-event-repository";
 import { serializeInterview } from "@/lib/serializers";
 import type { InterviewInput, InterviewUpdateInput } from "@/lib/validation/interview";
 import { interviewRepository } from "@/server/repositories/interview-repository";
@@ -53,6 +55,11 @@ export async function createInterview(
   } else {
     await applicationRepository.touch(applicationId);
   }
+  await productEventRepository.record({
+    userId,
+    name: PRODUCT_EVENTS.interviewCreated,
+    entityId: interview.id,
+  });
   logger.info("interview.created", {
     userId,
     applicationId,

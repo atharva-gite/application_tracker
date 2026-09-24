@@ -5,6 +5,7 @@ import { AppError } from "@/lib/errors";
 import { parseSchema } from "@/lib/validation/helpers";
 import { dateOnlySchema, dateTimeSchema, paginationSchema } from "@/lib/validation/helpers";
 import { applicationListQuerySchema } from "@/lib/validation/application";
+import { analyticsQuerySchema } from "@/lib/validation/analytics";
 
 describe("dates", () => {
   it("stores date-only values at UTC midnight", () => {
@@ -54,5 +55,23 @@ describe("pagination", () => {
       page: 1,
       pageSize: 20,
     });
+  });
+});
+
+describe("analytics query", () => {
+  it("defaults to all time", () => {
+    expect(parseSchema(analyticsQuerySchema, {})).toEqual({ range: "all" });
+  });
+
+  it("accepts simple windows", () => {
+    expect(parseSchema(analyticsQuerySchema, { range: "30" })).toEqual({
+      range: "30",
+    });
+  });
+
+  it("rejects unknown ranges", () => {
+    expect(() => parseSchema(analyticsQuerySchema, { range: "year" })).toThrow(
+      AppError,
+    );
   });
 });

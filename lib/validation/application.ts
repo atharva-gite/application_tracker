@@ -103,7 +103,10 @@ function salaryRange(value: { salaryMin?: number; salaryMax?: number }) {
 }
 
 export const applicationCreateSchema = z
-  .object(applicationFields)
+  .object({
+    ...applicationFields,
+    documentId: optional(z.string().min(1, "Select a resume or attach later.")),
+  })
   .refine((value) => Boolean(value.companyId || value.companyName), {
     message: "Select an existing company or enter a company name.",
     path: ["companyName"],

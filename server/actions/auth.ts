@@ -8,13 +8,16 @@ import {
   forgotPasswordSchema,
   loginSchema,
   parseSchema,
+  profileSchema,
   registerSchema,
   resetPasswordSchema,
 } from "@/lib/validation/auth";
+import { requireUser } from "@/server/authorization/require-user";
 import {
   registerUser,
   requestPasswordReset,
   resetPassword,
+  updateProfile,
 } from "@/server/services/auth-service";
 
 export type AuthFormState = {
@@ -49,6 +52,7 @@ export async function registerAction(
       name: formData.get("name"),
       email: formData.get("email"),
       password: formData.get("password"),
+      timezone: formData.get("timezone"),
     });
     await registerUser(input);
     await signIn("credentials", {
@@ -61,6 +65,24 @@ export async function registerAction(
   }
 
   redirect("/dashboard");
+}
+
+export async function updateProfileAction(
+  _prev: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  try {
+    const user = await requireUser();
+    const input = parseSchema(profileSchema, {
+      name: formData.get("name"),
+      timezone: formData.get("timezone"),
+    });
+    await updateProfile(user.id, input);
+  } catch (error) {
+    return toFormState(error);
+  }
+
+  redirect("/settings?saved=1");
 }
 
 export async function loginAction(
