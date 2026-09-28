@@ -1,7 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useId } from "react";
 
+import { AuthField } from "@/components/auth/auth-field";
+import { AuthAlert, AuthSubmit } from "@/components/auth/auth-header";
 import {
   forgotPasswordAction,
   type AuthFormState,
@@ -14,44 +16,38 @@ export function ForgotPasswordForm() {
     forgotPasswordAction,
     initialState,
   );
+  const formErrorId = useId();
+  const success = Boolean(state.message && !state.fieldErrors);
 
   return (
-    <form action={action} className="space-y-4">
-      {state.message && !state.fieldErrors ? (
-        <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-          {state.message}
-        </p>
-      ) : null}
-      {state.message && state.fieldErrors ? (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-[var(--danger)]">
-          {state.message}
-        </p>
-      ) : null}
-      <div>
-        <label htmlFor="email" className="mb-1 block text-sm font-medium">
-          Email
-        </label>
-        <input
+    <form action={action} className="flex flex-col" aria-busy={pending}>
+      <div className="space-y-4">
+        <AuthField
           id="email"
           name="email"
+          label="Email address"
           type="email"
           autoComplete="email"
-          required
-        className="input"
+          error={state.fieldErrors?.email?.[0]}
         />
-        {state.fieldErrors?.email?.[0] ? (
-          <p className="mt-1 text-sm text-[var(--danger)]">
-            {state.fieldErrors.email[0]}
-          </p>
-        ) : null}
       </div>
-      <button
-        type="submit"
-        disabled={pending}
-        className="btn-primary w-full"
-      >
-        {pending ? "Sending…" : "Send reset instructions"}
-      </button>
+
+      <div className="mt-4">
+        {state.message ? (
+          <div className="mb-3" aria-live="polite">
+            <AuthAlert id={formErrorId} tone={success ? "success" : "danger"}>
+              {state.message}
+            </AuthAlert>
+          </div>
+        ) : null}
+        <AuthSubmit
+          pending={pending}
+          pendingLabel="Sending…"
+          describedBy={state.message ? formErrorId : undefined}
+        >
+          Send reset instructions
+        </AuthSubmit>
+      </div>
     </form>
   );
 }

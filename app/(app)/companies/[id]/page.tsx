@@ -34,7 +34,7 @@ export default async function CompanyDetailPage({
       </Link>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{company.name}</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">{company.name}</h1>
           <p className="mt-1 text-sm text-stone-600">
             {[company.industry, company.location].filter(Boolean).join(" · ") ||
               "No industry or location yet."}
@@ -42,12 +42,12 @@ export default async function CompanyDetailPage({
         </div>
         <Link
           href={`/companies/${id}/edit`}
-          className="rounded-md bg-white px-3 py-2 text-sm ring-1 ring-border"
+          className="btn-secondary"
         >
           Edit
         </Link>
       </div>
-      <section className="rounded-2xl border border-border bg-surface p-5 text-sm">
+      <section className="card p-6 text-sm">
         {company.website ? (
           <p>
             <a href={company.website} className="text-accent hover:underline">
@@ -59,7 +59,7 @@ export default async function CompanyDetailPage({
           {company.notes || "No notes yet."}
         </p>
       </section>
-      <section className="rounded-2xl border border-border bg-surface">
+      <section className="card overflow-hidden">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <h2 className="font-medium">Applications</h2>
           <Link href="/applications/new" className="text-sm text-accent">

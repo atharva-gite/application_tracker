@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import { normalizeCompanyName } from "@/lib/domain";
 import { parseSchema } from "@/lib/validation/helpers";
-import { applicationCreateSchema, applicationListQuerySchema } from "@/lib/validation/application";
+import {
+  applicationCreateSchema,
+  applicationListQuerySchema,
+  isTerminalApplicationStatus,
+} from "@/lib/validation/application";
 import { companyInputSchema } from "@/lib/validation/company";
 
 describe("company name normalization", () => {
@@ -61,6 +65,12 @@ describe("application validation", () => {
     expect(query.pageSize).toBe(20);
     expect(query.order).toBe("desc");
     expect(query.status).toBe("INTERVIEW");
+  });
+
+  it("treats rejected and withdrawn as terminal stages", () => {
+    expect(isTerminalApplicationStatus("REJECTED")).toBe(true);
+    expect(isTerminalApplicationStatus("WITHDRAWN")).toBe(true);
+    expect(isTerminalApplicationStatus("INTERVIEW")).toBe(false);
   });
 });
 

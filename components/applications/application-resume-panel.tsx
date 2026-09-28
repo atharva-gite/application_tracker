@@ -69,7 +69,7 @@ export function ApplicationResumePanel({
       {error ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}
 
       {resume && !editing ? (
-        <div className="rounded-lg bg-white p-4 ring-1 ring-border">
+        <div className="inset p-4">
           <p className="font-medium">{resume.name}</p>
           <p className="mt-1 text-sm text-stone-500">{format ?? "Document"}</p>
           <div className="mt-4 flex flex-wrap gap-2">

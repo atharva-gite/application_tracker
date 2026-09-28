@@ -30,8 +30,14 @@ export function Field({
         required={required}
         placeholder={placeholder}
         className="input"
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${id}-error` : undefined}
       />
-      {error ? <p className="mt-1 text-sm text-[var(--danger)]">{error}</p> : null}
+      {error ? (
+        <p id={`${id}-error`} className="mt-1 text-sm text-[var(--danger)]">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -67,10 +73,16 @@ export function SelectField({
         value={value}
         onChange={onChange ? (event) => onChange(event.target.value) : undefined}
         className="input"
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${id}-error` : undefined}
       >
         {children}
       </select>
-      {error ? <p className="mt-1 text-sm text-[var(--danger)]">{error}</p> : null}
+      {error ? (
+        <p id={`${id}-error`} className="mt-1 text-sm text-[var(--danger)]">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -101,8 +113,14 @@ export function TextAreaField({
         rows={rows}
         defaultValue={defaultValue}
         className="input"
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${id}-error` : undefined}
       />
-      {error ? <p className="mt-1 text-sm text-[var(--danger)]">{error}</p> : null}
+      {error ? (
+        <p id={`${id}-error`} className="mt-1 text-sm text-[var(--danger)]">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

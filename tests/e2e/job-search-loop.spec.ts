@@ -52,17 +52,20 @@ test("student can manage the core job-search loop", async ({ page }) => {
   await page.getByRole("button", { name: "Interview", exact: true }).click();
   await expect(page.getByText("Saved → Interview")).toBeVisible();
 
+  await page.locator("summary", { hasText: "Add interview" }).click();
   await page.getByLabel("Date and time").fill(localDateTime(26));
   await page.getByLabel("Interviewer").fill("Jane Doe");
   await page.getByRole("button", { name: "Add interview" }).click();
   await expect(page.getByText("Jane Doe")).toBeVisible();
 
+  await page.locator("summary", { hasText: "Add note" }).click();
   await page.locator("#content").fill("Prepare graph algorithms");
   await page.getByRole("button", { name: "Add note" }).click();
   await expect(
     page.getByRole("paragraph").filter({ hasText: "Prepare graph algorithms" }),
   ).toBeVisible();
 
+  await page.locator("summary", { hasText: "Add follow-up" }).click();
   await page.getByLabel("Due").fill(localDateTime(-2));
   await page.getByRole("button", { name: "Add follow-up" }).click();
   await expect(page.getByText("Follow up with recruiter").first()).toBeVisible();

@@ -73,3 +73,12 @@ export async function archiveApplicationAction(formData: FormData) {
   await archiveApplication(user.id, id);
   redirect("/applications");
 }
+
+export async function unarchiveApplicationAction(formData: FormData) {
+  const user = await requireUser();
+  const id = String(formData.get("applicationId") ?? "");
+  await updateApplication(user.id, id, { archived: false });
+  revalidatePath(`/applications/${id}`);
+  revalidatePath("/applications");
+  revalidatePath("/dashboard");
+}

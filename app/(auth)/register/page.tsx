@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { AuthHeader } from "@/components/auth/auth-header";
 import { RegisterForm } from "@/components/auth/register-form";
 
 export const metadata: Metadata = {
@@ -10,16 +11,19 @@ export const metadata: Metadata = {
 export default function RegisterPage() {
   return (
     <div>
-      <h1 className="font-display text-3xl tracking-tight">Create your account</h1>
-      <p className="mt-2 text-sm text-stone-600">
-        Start tracking applications, interviews, and follow-ups.
-      </p>
+      <AuthHeader
+        title="Create your account"
+        description="Start tracking applications, interviews, and follow-ups."
+      />
       <div className="mt-6">
         <RegisterForm />
       </div>
-      <p className="mt-4 text-sm text-stone-600">
+      <p className="mt-6 text-[0.9375rem] text-stone-600">
         Already have an account?{" "}
-        <Link href="/login" className="font-medium text-accent">
+        <Link
+          href="/login"
+          className="font-semibold text-accent underline-offset-4 hover:underline"
+        >
           Log in
         </Link>
       </p>

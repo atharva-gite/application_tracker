@@ -86,13 +86,26 @@ export default async function ApplicationsPage({
               : " in your pipeline."}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <form action="/api/applications/export" method="get">
+        <div className="flex flex-wrap items-center gap-2">
+          <details className="relative sm:hidden">
+            <summary className="btn-secondary list-none">More</summary>
+            <div className="absolute right-0 z-20 mt-2 flex min-w-[10rem] flex-col gap-1 rounded-xl border border-border bg-white p-1.5 shadow-sm">
+              <form action="/api/applications/export" method="get">
+                <button type="submit" className="w-full rounded-lg px-3 py-2 text-left text-sm">
+                  Export CSV
+                </button>
+              </form>
+              <Link href="/applications/import" className="rounded-lg px-3 py-2 text-sm">
+                Import CSV
+              </Link>
+            </div>
+          </details>
+          <form action="/api/applications/export" method="get" className="hidden sm:block">
             <button type="submit" className="btn-secondary">
               Export CSV
             </button>
           </form>
-          <Link href="/applications/import" className="btn-secondary">
+          <Link href="/applications/import" className="btn-secondary hidden sm:inline-flex">
             Import CSV
           </Link>
           <Link href="/applications/new" className="btn-primary">

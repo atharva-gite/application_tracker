@@ -32,7 +32,7 @@ export function Pagination({
         {page > 1 ? (
           <Link
             href={withQuery(pathname, { ...query, page: page - 1 })}
-            className="rounded-md bg-white px-3 py-1.5 ring-1 ring-border"
+            className="rounded-md border border-border bg-white px-3 py-1.5"
           >
             Previous
           </Link>
@@ -40,7 +40,7 @@ export function Pagination({
         {page < lastPage ? (
           <Link
             href={withQuery(pathname, { ...query, page: page + 1 })}
-            className="rounded-md bg-white px-3 py-1.5 ring-1 ring-border"
+            className="rounded-md border border-border bg-white px-3 py-1.5"
           >
             Next
           </Link>

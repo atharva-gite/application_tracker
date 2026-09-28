@@ -1,7 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useId } from "react";
 
+import { AuthField } from "@/components/auth/auth-field";
+import { AuthAlert, AuthSubmit } from "@/components/auth/auth-header";
 import { resetPasswordAction, type AuthFormState } from "@/server/actions/auth";
 
 const initialState: AuthFormState = {};
@@ -11,50 +13,43 @@ export function ResetPasswordForm({ token }: { token: string }) {
     resetPasswordAction,
     initialState,
   );
+  const formErrorId = useId();
 
   if (!token) {
     return (
-      <p className="text-sm text-[var(--danger)]">
+      <AuthAlert>
         This reset link is missing a token. Request a new password reset email.
-      </p>
+      </AuthAlert>
     );
   }
 
   return (
-    <form action={action} className="space-y-4">
-      {state.message ? (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-[var(--danger)]">
-          {state.message}
-        </p>
-      ) : null}
+    <form action={action} className="flex flex-col" aria-busy={pending}>
       <input type="hidden" name="token" value={token} />
-      <div>
-        <label htmlFor="password" className="mb-1 block text-sm font-medium">
-          New password
-        </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="new-password"
-          required
-          className="input"
-        />
-        {state.fieldErrors?.password?.[0] ? (
-          <p className="mt-1 text-sm text-[var(--danger)]">
-            {state.fieldErrors.password[0]}
-          </p>
-        ) : (
-          <p className="mt-1 text-xs text-stone-500">At least 8 characters.</p>
-        )}
+      <AuthField
+        id="password"
+        name="password"
+        label="New password"
+        type="password"
+        autoComplete="new-password"
+        hint="At least 8 characters."
+        error={state.fieldErrors?.password?.[0]}
+      />
+
+      <div className="mt-4">
+        {state.message ? (
+          <div className="mb-3" aria-live="polite">
+            <AuthAlert id={formErrorId}>{state.message}</AuthAlert>
+          </div>
+        ) : null}
+        <AuthSubmit
+          pending={pending}
+          pendingLabel="Updating…"
+          describedBy={state.message ? formErrorId : undefined}
+        >
+          Update password
+        </AuthSubmit>
       </div>
-      <button
-        type="submit"
-        disabled={pending}
-        className="btn-primary w-full"
-      >
-        {pending ? "Updating…" : "Update password"}
-      </button>
     </form>
   );
 }

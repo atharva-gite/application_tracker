@@ -34,6 +34,12 @@ export function isAllowedApplicationStatusTransition(
   return isApplicationStatus(fromStatus) && isApplicationStatus(toStatus);
 }
 
+export function isTerminalApplicationStatus(
+  status: ApplicationStatusValue,
+): status is "REJECTED" | "WITHDRAWN" {
+  return status === "REJECTED" || status === "WITHDRAWN";
+}
+
 export const EMPLOYMENT_TYPES = [
   "INTERNSHIP",
   "FULL_TIME",

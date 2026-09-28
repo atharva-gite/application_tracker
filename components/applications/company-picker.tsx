@@ -52,7 +52,7 @@ export function CompanyPicker({
         className="input"
       />
       {matches.length > 0 ? (
-        <ul className="mt-2 overflow-hidden rounded-xl ring-1 ring-border">
+        <ul className="mt-2 overflow-hidden rounded-lg border border-border">
           {matches.map((company) => (
             <li key={company.id}>
               <button

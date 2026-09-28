@@ -11,6 +11,7 @@ import {
   prepareBoardStatusMove,
   sameApplicationDataset,
   serializeBoardDrag,
+  terminalStageConfirmMessage,
   type BoardApplication,
 } from "@/lib/application-board";
 import { applicationFilterQuery } from "@/lib/application-list";
@@ -155,6 +156,16 @@ describe("application board status moves", () => {
     expect(parseBoardDrag(payload)).toEqual({ id: "saved-1", status: "SAVED" });
     expect(parseBoardDrag("not-json")).toBeNull();
     expect(parseBoardDrag('{"id":"saved-1","status":"HIRED"}')).toBeNull();
+  });
+
+  it("asks for confirmation only when moving to a closed stage", () => {
+    expect(terminalStageConfirmMessage("REJECTED")).toBe(
+      "Move this application to Rejected?",
+    );
+    expect(terminalStageConfirmMessage("WITHDRAWN")).toBe(
+      "Move this application to Withdrawn?",
+    );
+    expect(terminalStageConfirmMessage("INTERVIEW")).toBeNull();
   });
 
   it("persists the new stage through the status API", async () => {

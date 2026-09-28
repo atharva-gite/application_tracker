@@ -6,38 +6,53 @@ export function Logo({
   href = "/",
   size = "md",
   tone = "dark",
+  mark = "tile",
 }: {
   href?: string;
   size?: "sm" | "md";
   tone?: "dark" | "light";
+  mark?: "tile" | "plain";
 }) {
-  const mark = size === "sm" ? "h-7 w-7" : "h-8 w-8";
+  const tile = size === "sm" ? "h-7 w-7" : "h-8 w-8";
   const word = size === "sm" ? "text-base" : "text-lg";
   const light = tone === "light";
 
   return (
     <Link
       href={href}
-      className={`inline-flex items-center gap-2.5 ${word} font-semibold tracking-tight ${
-        light ? "text-white" : "text-foreground"
+      className={`inline-flex items-center gap-2.5 ${
+        mark === "plain"
+          ? "text-foreground"
+          : `${word} font-semibold tracking-tight ${light ? "text-white" : "text-foreground"}`
       }`}
     >
-      <span
-        className={`grid ${mark} place-items-center rounded-lg ${
-          light ? "bg-white text-accent" : "bg-accent text-white"
-        }`}
-        aria-hidden
-      >
-        <FolioMark />
-      </span>
-      {APP_NAME}
+      {mark === "plain" ? (
+        <>
+          <span className="text-accent" aria-hidden>
+            <FolioMark className={size === "sm" ? "h-[1.15rem] w-[1.15rem]" : "h-5 w-5"} />
+          </span>
+          <span className="font-display text-[1.35rem] font-medium tracking-tight">
+            {APP_NAME}
+          </span>
+        </>
+      ) : (
+        <span
+          className={`grid ${tile} place-items-center rounded-lg ${
+            light ? "bg-white text-accent" : "bg-accent text-white"
+          }`}
+          aria-hidden
+        >
+          <FolioMark />
+        </span>
+      )}
+      {mark === "plain" ? null : APP_NAME}
     </Link>
   );
 }
 
-function FolioMark() {
+function FolioMark({ className = "h-4 w-4" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" aria-hidden>
+    <svg viewBox="0 0 20 20" className={className} fill="none" aria-hidden>
       <path
         d="M6 3.75h5.25L16 8.5v8.25A1.5 1.5 0 0 1 14.5 18.25h-8A1.5 1.5 0 0 1 5 16.75v-11.5A1.5 1.5 0 0 1 6.5 3.75H6Z"
         stroke="currentColor"

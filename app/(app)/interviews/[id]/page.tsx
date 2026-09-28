@@ -139,7 +139,7 @@ export default async function InterviewDetailPage({
           <h2 className="text-lg font-medium">Application notes</h2>
           <ul className="mt-3 space-y-3 text-sm">
             {notes.notes.map((note) => (
-              <li key={note.id} className="rounded-lg bg-white p-3 ring-1 ring-border">
+              <li key={note.id} className="inset p-3.5">
                 <p className="whitespace-pre-wrap text-stone-700">{note.content}</p>
               </li>
             ))}

@@ -37,7 +37,7 @@ export default async function AnalyticsPage({
     <div className="mx-auto max-w-4xl space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Analytics</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Analytics</h1>
           <p className="mt-1 text-sm text-stone-600">
             How this job search is performing
             {range === "all"
@@ -104,7 +104,7 @@ export default async function AnalyticsPage({
             />
           </section>
 
-          <section className="rounded-2xl border border-border bg-surface p-5">
+          <section className="card p-6">
             <h2 className="font-medium">Current stages</h2>
             <p className="mt-1 text-sm text-stone-600">
               Snapshot of where applications sit now, not where they have been.
@@ -127,7 +127,7 @@ export default async function AnalyticsPage({
             </ul>
           </section>
 
-          <section className="rounded-2xl border border-border bg-surface p-5">
+          <section className="card p-6">
             <h2 className="font-medium">By source</h2>
             <p className="mt-1 text-sm text-stone-600">
               Interview count is applications that reached interview from that
@@ -170,7 +170,7 @@ export default async function AnalyticsPage({
             )}
           </section>
 
-          <section className="rounded-2xl border border-border bg-surface p-5">
+          <section className="card p-6">
             <h2 className="font-medium">Time in stage</h2>
             <p className="mt-1 text-sm text-stone-600">
               Completed stages use the time between status history transitions.
@@ -216,7 +216,7 @@ function RangeLinks({ range }: { range: AnalyticsRange }) {
   return (
     <nav
       aria-label="Time range"
-      className="flex flex-wrap gap-1 rounded-lg bg-white p-1 ring-1 ring-border"
+      className="flex flex-wrap gap-1 rounded-lg border border-border bg-white p-1"
     >
       {ANALYTICS_RANGES.map((value) => {
         const active = value === range;
@@ -249,7 +249,7 @@ function Metric({
   detail: string;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
+    <div className="card p-5">
       <p className="text-sm text-stone-500">{label}</p>
       <p className="mt-2 text-2xl font-semibold">{value}</p>
       <p className="mt-2 text-sm text-stone-600">{detail}</p>

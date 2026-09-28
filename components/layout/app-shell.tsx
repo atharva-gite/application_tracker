@@ -13,9 +13,9 @@ export function AppShell({
   userName: string;
 }) {
   return (
-    <div className="min-h-full lg:grid lg:grid-cols-[16.5rem_1fr]">
-      <aside className="hidden border-r border-border bg-surface lg:flex lg:flex-col lg:justify-between">
-        <div className="px-4 pt-6">
+    <div className="min-h-full lg:grid lg:grid-cols-[15.5rem_1fr]">
+      <aside className="hidden border-r border-border bg-surface lg:sticky lg:top-0 lg:flex lg:h-svh lg:flex-col lg:justify-between">
+        <div className="px-4 pt-5">
           <div className="px-2">
             <Logo href="/dashboard" />
           </div>
@@ -54,6 +54,9 @@ export function AppShell({
               <Link href="/applications/new" className="btn-primary px-3 py-1.5 text-xs">
                 Add
               </Link>
+              <Link href="/settings" className="text-sm text-stone-600">
+                Settings
+              </Link>
               <form action={logoutAction}>
                 <button type="submit" className="text-sm text-stone-600">
                   Log out
@@ -65,7 +68,7 @@ export function AppShell({
             <NavLinks variant="mobile" />
           </nav>
         </header>
-        <main className="min-w-0 flex-1 px-5 py-8 sm:px-10 sm:py-10">{children}</main>
+        <main className="min-w-0 flex-1 px-5 py-7 sm:px-8 sm:py-9 lg:px-10">{children}</main>
       </div>
     </div>
   );

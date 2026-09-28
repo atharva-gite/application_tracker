@@ -4,6 +4,7 @@ import {
   APPLICATION_STATUSES,
   isAllowedApplicationStatusTransition,
   isApplicationStatus,
+  isTerminalApplicationStatus,
   type ApplicationStatusValue,
 } from "@/lib/validation/application";
 
@@ -112,6 +113,13 @@ export async function persistApplicationStatus(
       body?.error?.message ?? "Could not update the application stage.",
     );
   }
+}
+
+export function terminalStageConfirmMessage(toStatus: ApplicationStatusValue) {
+  if (!isTerminalApplicationStatus(toStatus)) {
+    return null;
+  }
+  return `Move this application to ${statusLabels[toStatus]}?`;
 }
 
 export function failedBoardMoveMessage(error: unknown) {

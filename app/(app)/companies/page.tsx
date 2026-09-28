@@ -23,27 +23,28 @@ export default async function CompaniesPage({
   return (
     <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[1fr_20rem]">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Companies</h1>
-        <p className="mt-1 text-sm text-stone-600">
+        <h1 className="text-3xl font-semibold tracking-tight">Companies</h1>
+        <p className="mt-2 text-sm text-stone-600">
           Company names are unique per account so you do not create duplicates.
         </p>
-        <form className="mt-4">
+        <form className="mt-6">
           <input
             name="q"
             defaultValue={q}
             placeholder="Search companies"
-            className="w-full max-w-sm rounded-md border border-border bg-white px-3 py-2 text-sm"
+            className="input max-w-sm"
+            aria-label="Search companies"
           />
         </form>
         {companies.length === 0 ? (
-          <section className="mt-6 rounded-2xl border border-dashed border-border bg-surface p-6">
+          <section className="card mt-8 border-dashed p-8">
             <h2 className="font-medium">No companies yet</h2>
             <p className="mt-2 text-sm text-stone-600">
               Add a company here or while creating an application.
             </p>
           </section>
         ) : (
-          <ul className="mt-6 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
+          <ul className="card mt-8 divide-y divide-border overflow-hidden">
             {companies.map((company) => (
               <li key={company.id} className="flex items-center justify-between gap-3 p-4">
                 <div>
@@ -64,7 +65,7 @@ export default async function CompaniesPage({
           </ul>
         )}
       </div>
-      <aside className="rounded-2xl border border-border bg-surface p-5">
+      <aside className="card h-fit p-6">
         <h2 className="font-medium">Add company</h2>
         <div className="mt-4">
           <CompanyForm />

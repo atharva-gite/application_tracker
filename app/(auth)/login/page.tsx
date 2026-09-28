@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { AuthAlert, AuthHeader } from "@/components/auth/auth-header";
 import { LoginForm } from "@/components/auth/login-form";
 
 export const metadata: Metadata = {
@@ -16,28 +17,31 @@ export default async function LoginPage({
 
   return (
     <div>
-      <h1 className="font-display text-3xl tracking-tight">Welcome back</h1>
-      <p className="mt-2 text-sm text-stone-600">
-        Log in to pick up your search.
-      </p>
+      <AuthHeader
+        title="Welcome back"
+        description="Pick up where you left off."
+      />
       {params.reset ? (
-        <p className="mt-4 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-          Your password was updated. You can log in now.
-        </p>
+        <div className="mt-6">
+          <AuthAlert tone="success">
+            Your password was updated. You can log in now.
+          </AuthAlert>
+        </div>
       ) : null}
       <div className="mt-6">
         <LoginForm />
       </div>
-      <p className="mt-4 text-sm text-stone-600">
-        <Link href="/forgot-password" className="font-medium text-accent">
-          Forgot password?
-        </Link>
-      </p>
-      <p className="mt-2 text-sm text-stone-600">
-        New here?{" "}
-        <Link href="/register" className="font-medium text-accent">
+      <p className="mt-6 text-[0.9375rem] text-stone-600">
+        New to Folio?{" "}
+        <Link
+          href="/register"
+          className="font-semibold text-accent underline-offset-4 hover:underline"
+        >
           Create an account
         </Link>
+      </p>
+      <p className="mt-8 text-[0.8125rem] leading-5 text-stone-400">
+        Your applications and job-search data stay private.
       </p>
     </div>
   );

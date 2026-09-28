@@ -14,11 +14,12 @@ import {
   persistApplicationStatus,
   prepareBoardStatusMove,
   serializeBoardDrag,
+  terminalStageConfirmMessage,
   type BoardApplication,
 } from "@/lib/application-board";
 import { deadlineToneClass, describeDeadline, describePast } from "@/lib/attention";
 import { statusLabels } from "@/lib/labels";
-import type { ApplicationStatusValue } from "@/lib/validation/application";
+import { APPLICATION_STATUSES, type ApplicationStatusValue } from "@/lib/validation/application";
 
 export function ApplicationBoard({
   applications,
@@ -54,6 +55,11 @@ export function ApplicationBoard({
       return;
     }
 
+    const confirmMessage = terminalStageConfirmMessage(prepared.toStatus);
+    if (confirmMessage && !window.confirm(confirmMessage)) {
+      return;
+    }
+
     pendingRef.current = new Set(prepared.pendingIds);
     itemsRef.current = prepared.optimistic;
     setPendingIds(prepared.pendingIds);
@@ -83,7 +89,7 @@ export function ApplicationBoard({
       {error ? (
         <div
           role="alert"
-          className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 text-sm ring-1 ring-border"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-white px-4 py-3 text-sm"
         >
           <p className="text-stone-700">{error}</p>
           {retry ? (
@@ -126,10 +132,10 @@ export function ApplicationBoard({
                 }
                 void moveCard(payload.id, column.status);
               }}
-              className={`flex w-[17rem] shrink-0 flex-col rounded-2xl p-3 ring-1 ${
+              className={`flex w-[16.5rem] shrink-0 flex-col rounded-xl border p-2.5 ${
                 overStatus === column.status
-                  ? "bg-[var(--accent-soft)] ring-accent/20"
-                  : "bg-[#f7f6f2] ring-border"
+                  ? "border-accent/30 bg-[var(--accent-soft)]"
+                  : "border-border bg-[#f7f6f2]"
               }`}
             >
               <header className="mb-3 px-1">
@@ -146,6 +152,7 @@ export function ApplicationBoard({
                     key={item.id}
                     application={item}
                     pending={pendingIds.includes(item.id)}
+                    onMove={(status) => moveCard(item.id, status)}
                     onDragBegin={() => {
                       dragged.current = true;
                     }}
@@ -159,7 +166,7 @@ export function ApplicationBoard({
                   />
                 ))}
                 {column.applications.length === 0 ? (
-                  <p className="rounded-xl border border-dashed border-border px-3 py-8 text-center text-sm text-stone-400">
+                  <p className="rounded-lg border border-dashed border-border px-3 py-8 text-center text-sm text-stone-400">
                     Drop an application here
                   </p>
                 ) : null}
@@ -175,12 +182,14 @@ export function ApplicationBoard({
 function BoardCard({
   application,
   pending,
+  onMove,
   onDragBegin,
   onDragEnd,
   suppressClick,
 }: {
   application: BoardApplication;
   pending: boolean;
+  onMove: (status: ApplicationStatusValue) => void;
   onDragBegin: () => void;
   onDragEnd: () => void;
   suppressClick: () => boolean;
@@ -192,7 +201,7 @@ function BoardCard({
     application.createdAt;
   const extras = [application.location, application.source].filter(Boolean);
 
-  function handleDragStart(event: DragEvent<HTMLAnchorElement>) {
+  function handleDragStart(event: DragEvent<HTMLDivElement>) {
     onDragBegin();
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData(
@@ -202,26 +211,44 @@ function BoardCard({
   }
 
   return (
-    <Link
-      href={boardCardHref(application.id)}
+    <div
       draggable={!pending}
       onDragStart={handleDragStart}
       onDragEnd={onDragEnd}
-      onClick={(event) => {
-        if (suppressClick()) {
-          event.preventDefault();
-        }
-      }}
       aria-disabled={pending}
-      className={`block rounded-xl bg-white p-3 ring-1 ring-border hover:ring-stone-300 ${
-        pending ? "pointer-events-none opacity-60" : ""
+      className={`rounded-lg border border-border bg-white p-3 ${
+        pending ? "pointer-events-none opacity-60" : "hover:border-stone-300"
       }`}
     >
-      <p className="text-sm font-medium">{application.company.name}</p>
-      <p className="text-sm text-stone-600">{application.roleTitle}</p>
-      <p className="mt-2 text-xs text-stone-500">
-        {statusLabels[application.status]}
-      </p>
+      <Link
+        href={boardCardHref(application.id)}
+        onClick={(event) => {
+          if (suppressClick()) {
+            event.preventDefault();
+          }
+        }}
+        className="block"
+      >
+        <p className="text-sm font-medium">{application.company.name}</p>
+        <p className="text-sm text-stone-600">{application.roleTitle}</p>
+      </Link>
+      <label className="mt-2 block">
+        <span className="sr-only">
+          Stage for {application.company.name} {application.roleTitle}
+        </span>
+        <select
+          value={application.status}
+          disabled={pending}
+          className="input py-1 text-xs"
+          onChange={(event) => onMove(event.target.value as ApplicationStatusValue)}
+        >
+          {APPLICATION_STATUSES.map((status) => (
+            <option key={status} value={status}>
+              {statusLabels[status]}
+            </option>
+          ))}
+        </select>
+      </label>
       {due.kind !== "none" ? (
         <p className={`mt-2 text-xs ${deadlineToneClass(due.kind)}`}>
           Deadline: {due.label}
@@ -235,6 +262,6 @@ function BoardCard({
       {extras.length > 0 ? (
         <p className="mt-1 text-xs text-stone-400">{extras.join(" · ")}</p>
       ) : null}
-    </Link>
+    </div>
   );
 }

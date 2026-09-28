@@ -14,46 +14,107 @@ export const navItems = [
   { href: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
+const mobilePrimaryHrefs = new Set([
+  "/dashboard",
+  "/applications",
+  "/interviews",
+  "/resumes",
+]);
+
 export function NavLinks({ variant }: { variant: "side" | "mobile" }) {
   const pathname = usePathname();
+  const items =
+    variant === "mobile"
+      ? navItems.filter((item) => mobilePrimaryHrefs.has(item.href))
+      : navItems;
+  const overflow =
+    variant === "mobile"
+      ? navItems.filter((item) => !mobilePrimaryHrefs.has(item.href))
+      : [];
+  const overflowActive = overflow.some(
+    (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
+  );
 
   return (
     <>
-      {navItems.map((item) => {
-        const active =
-          pathname === item.href || pathname.startsWith(`${item.href}/`);
-        const Icon = item.icon;
-        if (variant === "side") {
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium ${
-                active
-                  ? "bg-[var(--accent-soft)] text-accent"
-                  : "text-stone-600 hover:bg-[var(--background)] hover:text-stone-900"
-              }`}
-            >
-              <Icon />
-              {item.label}
-            </Link>
-          );
-        }
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`whitespace-nowrap rounded-full px-3 py-1.5 text-sm ${
-                active
-                  ? "bg-accent text-white"
-                  : "bg-white text-stone-700 ring-1 ring-border"
-              }`}
+      {items.map((item) => (
+        <NavItem key={item.href} item={item} pathname={pathname} variant={variant} />
+      ))}
+      {overflow.length > 0 ? (
+        <details className="relative">
+          <summary
+            className={`cursor-pointer list-none whitespace-nowrap rounded-full px-3 py-1.5 text-sm ${
+              overflowActive
+                ? "bg-accent text-white"
+                : "border border-border bg-white text-stone-700"
+            }`}
           >
-            {item.label}
-          </Link>
-        );
-      })}
+            More
+          </summary>
+          <div className="absolute left-0 z-20 mt-2 flex min-w-[10rem] flex-col gap-1 rounded-xl border border-border bg-white p-1.5 shadow-sm">
+            {overflow.map((item) => (
+              <NavItem key={item.href} item={item} pathname={pathname} variant="overflow" />
+            ))}
+          </div>
+        </details>
+      ) : null}
     </>
+  );
+}
+
+function NavItem({
+  item,
+  pathname,
+  variant,
+}: {
+  item: (typeof navItems)[number];
+  pathname: string;
+  variant: "side" | "mobile" | "overflow";
+}) {
+  const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+  const Icon = item.icon;
+
+  if (variant === "side") {
+    return (
+      <Link
+        href={item.href}
+        aria-current={active ? "page" : undefined}
+        className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium ${
+          active
+            ? "bg-[var(--accent-soft)] text-accent"
+            : "text-stone-600 hover:bg-[var(--background)] hover:text-stone-900"
+        }`}
+      >
+        <Icon />
+        {item.label}
+      </Link>
+    );
+  }
+
+  if (variant === "overflow") {
+    return (
+      <Link
+        href={item.href}
+        aria-current={active ? "page" : undefined}
+        className={`rounded-lg px-3 py-2 text-sm ${
+          active ? "bg-[var(--accent-soft)] font-medium text-accent" : "text-stone-700"
+        }`}
+      >
+        {item.label}
+      </Link>
+    );
+  }
+
+  return (
+    <Link
+      href={item.href}
+      aria-current={active ? "page" : undefined}
+      className={`whitespace-nowrap rounded-full px-3 py-1.5 text-sm ${
+        active ? "bg-accent text-white" : "border border-border bg-white text-stone-700"
+      }`}
+    >
+      {item.label}
+    </Link>
   );
 }
 

@@ -13,10 +13,12 @@ import {
 import { CompleteFollowUpButton } from "@/components/applications/complete-follow-up-button";
 import { ApplicationNotFound } from "@/components/applications/application-not-found";
 import { ApplicationResumePanel } from "@/components/applications/application-resume-panel";
+import { StatusChangeForm } from "@/components/applications/status-change-form";
 import { DocumentAttachForm } from "@/components/applications/document-attach-form";
 import { DocumentRow } from "@/components/documents/document-row";
 import { JoinInterviewLink } from "@/components/interviews/join-interview-link";
 import { StatusBadge } from "@/components/status-badge";
+import { ConfirmForm } from "@/components/ui/confirm-form";
 import {
   buildApplicationTimeline,
   documentKindLabel,
@@ -37,7 +39,7 @@ import {
 import { APPLICATION_STATUSES } from "@/lib/validation/application";
 import {
   archiveApplicationAction,
-  changeStatusAction,
+  unarchiveApplicationAction,
 } from "@/server/actions/applications";
 import { requireUser } from "@/server/authorization/require-user";
 import {
@@ -195,10 +197,20 @@ export default async function ApplicationDetailPage({
           <Link href={`/applications/${id}/edit`} className="btn-secondary">
             Edit
           </Link>
-          <form action={archiveApplicationAction}>
-            <input type="hidden" name="applicationId" value={id} />
-            <button className="btn-ghost text-[var(--danger)]">Archive</button>
-          </form>
+          {application.archivedAt ? (
+            <form action={unarchiveApplicationAction}>
+              <input type="hidden" name="applicationId" value={id} />
+              <button className="btn-ghost">Unarchive</button>
+            </form>
+          ) : (
+            <ConfirmForm
+              action={archiveApplicationAction}
+              message="Archive this application? It will leave your active pipeline."
+            >
+              <input type="hidden" name="applicationId" value={id} />
+              <button className="btn-ghost text-[var(--danger)]">Archive</button>
+            </ConfirmForm>
+          )}
         </div>
       </div>
 
@@ -217,15 +229,13 @@ export default async function ApplicationDetailPage({
       ) : null}
 
       {needsInterviewStage ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 ring-1 ring-border">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[0.75rem] bg-[var(--accent-soft)] px-4 py-3">
           <p className="text-sm text-stone-700">
             This application has an interview but is still in {statusLabels[application.status]}.
           </p>
-          <form action={changeStatusAction}>
-            <input type="hidden" name="applicationId" value={id} />
-            <input type="hidden" name="status" value="INTERVIEW" />
+          <StatusChangeForm applicationId={id} status="INTERVIEW">
             <button className="text-sm font-medium text-accent">Move to Interview</button>
-          </form>
+          </StatusChangeForm>
         </div>
       ) : null}
 
@@ -236,28 +246,26 @@ export default async function ApplicationDetailPage({
         </p>
       ) : null}
 
-      <section className="card p-5">
-        <h2 className="mb-3 text-sm font-medium text-stone-500">Stage</h2>
-        <div className="flex flex-wrap gap-2">
+      <section className="card p-6">
+        <h2 className="mb-4 text-sm font-medium text-stone-500">Stage</h2>
+        <div className="flex flex-wrap gap-1.5">
           {APPLICATION_STATUSES.map((status) => (
-            <form action={changeStatusAction} key={status}>
-              <input type="hidden" name="applicationId" value={id} />
-              <input type="hidden" name="status" value={status} />
+            <StatusChangeForm applicationId={id} status={status} key={status}>
               <button
-                className={`rounded-full px-3 py-1 text-sm ${
+                className={
                   application.status === status
-                    ? "bg-accent text-white"
-                    : "bg-white ring-1 ring-border"
-                }`}
+                    ? "rounded-full bg-accent px-3 py-1 text-sm text-white"
+                    : "chip"
+                }
               >
                 {statusLabels[status]}
               </button>
-            </form>
+            </StatusChangeForm>
           ))}
         </div>
       </section>
 
-      <section className="card p-5">
+      <section className="card p-6">
         <h2 className="text-lg font-medium">Job information</h2>
         {jobFields.length === 0 && !application.description ? (
           <p className="mt-3 text-sm text-stone-600">No additional job details yet.</p>
@@ -296,26 +304,28 @@ export default async function ApplicationDetailPage({
         )}
       </section>
 
-      <section className="card p-5">
-        <h2 className="text-lg font-medium">Timeline</h2>
-        {timeline.length === 0 ? (
-          <p className="mt-3 text-sm text-stone-600">No history recorded yet.</p>
-        ) : (
-          <ol className="mt-4 space-y-5">
-            {timeline.map((group) => (
-              <li key={group.dateLabel}>
-                <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
-                  {group.dateLabel}
-                </p>
-                <ul className="mt-2 space-y-2 text-sm text-stone-700">
-                  {group.events.map((event) => (
-                    <li key={event.id}>{event.title}</li>
-                  ))}
-                </ul>
-              </li>
-            ))}
-          </ol>
-        )}
+      <section className="card p-6">
+        <details open={!next}>
+          <summary className="text-lg font-medium text-stone-800">Timeline</summary>
+          {timeline.length === 0 ? (
+            <p className="mt-3 text-sm text-stone-600">No history recorded yet.</p>
+          ) : (
+            <ol className="mt-4 space-y-5">
+              {timeline.map((group) => (
+                <li key={group.dateLabel}>
+                  <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
+                    {group.dateLabel}
+                  </p>
+                  <ul className="mt-2 space-y-2 text-sm text-stone-700">
+                    {group.events.map((event) => (
+                      <li key={event.id}>{event.title}</li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+            </ol>
+          )}
+        </details>
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -332,7 +342,7 @@ export default async function ApplicationDetailPage({
                   ? describeWhen(interview.scheduledAt, new Date(), timeZone)
                   : null;
                 return (
-                  <li key={interview.id} className="rounded-lg bg-white p-3 ring-1 ring-border">
+                  <li key={interview.id} className="inset p-3.5">
                     <Link href={interviewHref(interview.id)} className="font-medium hover:underline">
                       {interviewTypeLabels[interview.type]}
                     </Link>
@@ -363,7 +373,9 @@ export default async function ApplicationDetailPage({
               })}
             </ul>
           ) : null}
-          <InterviewForm applicationId={id} />
+          <AddSection label="Add interview">
+            <InterviewForm applicationId={id} />
+          </AddSection>
         </Panel>
 
         <Panel
@@ -375,7 +387,7 @@ export default async function ApplicationDetailPage({
           {contacts.contacts.length > 0 ? (
             <ul className="space-y-3 text-sm">
               {contacts.contacts.map((contact) => (
-                <li key={contact.id} className="rounded-lg bg-white p-3 ring-1 ring-border">
+                <li key={contact.id} className="inset p-3.5 text-sm">
                   <p className="font-medium">{contact.name}</p>
                   {contact.role ? <p className="text-stone-600">{contact.role}</p> : null}
                   {contact.email ? (
@@ -397,7 +409,9 @@ export default async function ApplicationDetailPage({
               ))}
             </ul>
           ) : null}
-          <ContactForm applicationId={id} companies={companies.companies} />
+          <AddSection label="Add contact">
+            <ContactForm applicationId={id} companies={companies.companies} />
+          </AddSection>
         </Panel>
       </div>
 
@@ -416,7 +430,7 @@ export default async function ApplicationDetailPage({
           emptyText="Attach a cover letter or supporting file if you have one."
         >
           {otherDocuments.length > 0 ? (
-            <ul className="divide-y divide-border overflow-hidden rounded-xl ring-1 ring-border">
+            <ul className="divide-y divide-border overflow-hidden rounded-[0.625rem] border border-border">
               {otherDocuments.map((doc) => {
                 const kind = documentKindLabel(doc);
                 return (
@@ -429,7 +443,9 @@ export default async function ApplicationDetailPage({
               })}
             </ul>
           ) : null}
-          <DocumentAttachForm applicationId={id} documents={library.documents} />
+          <AddSection label="Attach document">
+            <DocumentAttachForm applicationId={id} documents={library.documents} />
+          </AddSection>
         </Panel>
 
         <Panel
@@ -456,7 +472,7 @@ export default async function ApplicationDetailPage({
                       return (
                         <li
                           key={item.id}
-                          className={`rounded-lg bg-white p-3 ring-1 ring-border ${
+                          className={`inset p-3.5 ${
                             item.due.kind === "completed" ? "opacity-60" : ""
                           }`}
                         >
@@ -506,7 +522,9 @@ export default async function ApplicationDetailPage({
               ))}
             </div>
           ) : null}
-          <FollowUpForm applicationId={id} />
+          <AddSection label="Add follow-up">
+            <FollowUpForm applicationId={id} />
+          </AddSection>
         </Panel>
       </div>
 
@@ -519,7 +537,7 @@ export default async function ApplicationDetailPage({
         {notes.notes.length > 0 ? (
           <ul className="space-y-3 text-sm">
             {notes.notes.map((note) => (
-              <li key={note.id} className="rounded-lg bg-white p-3 ring-1 ring-border">
+              <li key={note.id} className="inset p-3.5">
                 <p className="whitespace-pre-wrap">{note.content}</p>
                 <p className="mt-2 text-xs text-stone-500">
                   {note.createdAt ? new Date(note.createdAt).toLocaleString() : ""}
@@ -534,9 +552,20 @@ export default async function ApplicationDetailPage({
             ))}
           </ul>
         ) : null}
-        <NoteForm applicationId={id} />
+        <AddSection label="Add note">
+          <NoteForm applicationId={id} />
+        </AddSection>
       </Panel>
     </div>
+  );
+}
+
+function AddSection({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <details>
+      <summary className="text-sm font-medium text-stone-700">{label}</summary>
+      <div className="mt-3">{children}</div>
+    </details>
   );
 }
 
@@ -554,7 +583,7 @@ function Panel({
   children: ReactNode;
 }) {
   return (
-    <section className="card space-y-5 p-6">
+    <section className="card space-y-4 p-6">
       <h2 className="text-lg font-medium">{title}</h2>
       {empty ? (
         <div>

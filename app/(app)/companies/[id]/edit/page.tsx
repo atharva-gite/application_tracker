@@ -21,8 +21,8 @@ export default async function EditCompanyPage({
       <Link href="/companies" className="text-sm text-stone-600 hover:text-stone-900">
         ← Companies
       </Link>
-      <h1 className="mt-4 text-2xl font-semibold tracking-tight">Edit company</h1>
-      <div className="mt-6 rounded-2xl border border-border bg-surface p-6">
+      <h1 className="mt-4 text-3xl font-semibold tracking-tight">Edit company</h1>
+      <div className="card mt-8 p-6 sm:p-8">
         <CompanyForm
           companyId={id}
           values={{

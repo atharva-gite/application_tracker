@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 
 import { employmentLabels, statusLabels } from "@/lib/labels";
@@ -145,11 +146,14 @@ export function ApplicationForm({
       ) : null}
       {!applicationId && documents.length === 0 ? (
         <p className="-mt-2 text-sm text-stone-500">
-          Optional. Upload a resume on the Resumes page, then attach it here or
-          from the application.
+          Optional.{" "}
+          <Link href="/resumes" className="font-medium text-accent hover:underline">
+            Upload a resume
+          </Link>
+          , then attach it here or from the application.
         </p>
       ) : null}
-      <details className="rounded-xl border border-border bg-white px-4 py-3" open={hasExtra}>
+      <details className="inset px-4 py-3" open={hasExtra}>
         <summary className="cursor-pointer text-sm font-medium">More details</summary>
         <div className="mt-4 space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">

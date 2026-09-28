@@ -83,7 +83,7 @@ export default async function DashboardPage() {
   const firstName = user.name?.trim().split(/\s+/)[0];
 
   return (
-    <div className="mx-auto max-w-5xl space-y-10">
+    <div className="mx-auto max-w-5xl space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">
@@ -103,7 +103,7 @@ export default async function DashboardPage() {
       <section className="card p-6 sm:p-7">
         <h2 className="font-medium">Needs attention</h2>
         {emptySearch ? (
-          <div className="mt-4 rounded-xl bg-white px-4 py-6 text-center ring-1 ring-border">
+          <div className="inset mt-4 px-4 py-8 text-center">
             <p className="text-sm text-stone-600">
               Add a company and role to start tracking interviews, deadlines, and
               follow-ups in one place.
@@ -122,7 +122,7 @@ export default async function DashboardPage() {
             {attention.map((item) => (
               <li
                 key={item.id}
-                className="flex items-start justify-between gap-3 rounded-xl bg-white px-4 py-3 ring-1 ring-border"
+                className="inset flex items-start justify-between gap-3 px-4 py-3"
               >
                 <div>
                   <span
@@ -170,12 +170,12 @@ export default async function DashboardPage() {
             Open board
           </Link>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+        <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
           {Object.entries(data.pipeline).map(([status, count]) => (
             <Link
               key={status}
               href={`/applications?status=${status}&view=board`}
-              className="rounded-xl bg-white p-3 text-center ring-1 ring-border transition hover:ring-stone-300"
+              className="inset p-3 text-center transition hover:bg-white"
             >
               <p className="text-xl font-semibold">{count}</p>
               <p className="mt-1 text-xs text-stone-500">
@@ -204,7 +204,7 @@ function Metric({
   href: string;
 }) {
   return (
-    <Link href={href} className="card p-5 transition hover:-translate-y-0.5">
+    <Link href={href} className="card p-5">
       <p className="text-sm text-stone-500">{label}</p>
       <p className="mt-1 text-2xl font-semibold">{value}</p>
     </Link>

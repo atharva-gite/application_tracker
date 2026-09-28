@@ -29,8 +29,8 @@ export default async function EditApplicationPage({
           ← Back to application
         </Link>
       </p>
-      <h1 className="mt-4 text-2xl font-semibold tracking-tight">Edit application</h1>
-      <div className="mt-6 rounded-2xl border border-border bg-surface p-6">
+      <h1 className="mt-4 text-3xl font-semibold tracking-tight">Edit application</h1>
+      <div className="card mt-8 p-6 sm:p-8">
         <ApplicationForm
           companies={companies}
           applicationId={id}
