@@ -17,7 +17,7 @@ import { StatusChangeForm } from "@/components/applications/status-change-form";
 import { DocumentAttachForm } from "@/components/applications/document-attach-form";
 import { DocumentRow } from "@/components/documents/document-row";
 import { JoinInterviewLink } from "@/components/interviews/join-interview-link";
-import { StatusBadge } from "@/components/status-badge";
+import { PageHeader } from "@/components/layout/page-header";
 import { ConfirmForm } from "@/components/ui/confirm-form";
 import {
   buildApplicationTimeline,
@@ -164,26 +164,21 @@ export default async function ApplicationDetailPage({
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
-      <Link href="/applications" className="text-sm text-stone-600 hover:text-stone-900">
-        ← Applications
-      </Link>
-
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-sm text-stone-500">
-            <Link href={`/companies/${application.company.id}`} className="hover:underline">
-              {application.company.name}
-            </Link>
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-            {application.roleTitle}
-          </h1>
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-stone-600">
-            <StatusBadge status={application.status} />
-            {application.archivedAt ? <span>Archived</span> : null}
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
+      <div>
+        <Link href="/applications" className="text-sm text-stone-600 hover:text-stone-900">
+          ← Applications
+        </Link>
+        <div className="mt-4">
+          <PageHeader
+            kicker={
+              <Link href={`/companies/${application.company.id}`} className="hover:underline">
+                {application.company.name}
+              </Link>
+            }
+            title={application.roleTitle}
+            description={application.archivedAt ? "Archived" : undefined}
+            actions={
+              <>
           {application.jobUrl ? (
             <a
               href={application.jobUrl}
@@ -211,6 +206,24 @@ export default async function ApplicationDetailPage({
               <button className="btn-ghost text-[var(--danger)]">Archive</button>
             </ConfirmForm>
           )}
+              </>
+            }
+          />
+        </div>
+        <div className="mt-5 flex flex-wrap gap-1.5">
+          {APPLICATION_STATUSES.map((status) => (
+            <StatusChangeForm applicationId={id} status={status} key={status}>
+              <button
+                className={
+                  application.status === status
+                    ? "rounded-full bg-accent px-3 py-1 text-sm text-white"
+                    : "chip"
+                }
+              >
+                {statusLabels[status]}
+              </button>
+            </StatusChangeForm>
+          ))}
         </div>
       </div>
 
@@ -229,7 +242,7 @@ export default async function ApplicationDetailPage({
       ) : null}
 
       {needsInterviewStage ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[0.75rem] bg-[var(--accent-soft)] px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-l-[3px] border-accent pl-3">
           <p className="text-sm text-stone-700">
             This application has an interview but is still in {statusLabels[application.status]}.
           </p>
@@ -246,27 +259,8 @@ export default async function ApplicationDetailPage({
         </p>
       ) : null}
 
-      <section className="card p-6">
-        <h2 className="mb-4 text-sm font-medium text-stone-500">Stage</h2>
-        <div className="flex flex-wrap gap-1.5">
-          {APPLICATION_STATUSES.map((status) => (
-            <StatusChangeForm applicationId={id} status={status} key={status}>
-              <button
-                className={
-                  application.status === status
-                    ? "rounded-full bg-accent px-3 py-1 text-sm text-white"
-                    : "chip"
-                }
-              >
-                {statusLabels[status]}
-              </button>
-            </StatusChangeForm>
-          ))}
-        </div>
-      </section>
-
-      <section className="card p-6">
-        <h2 className="text-lg font-medium">Job information</h2>
+      <section className="border-t border-border pt-6">
+        <h2 className="font-display text-xl tracking-tight">Job information</h2>
         {jobFields.length === 0 && !application.description ? (
           <p className="mt-3 text-sm text-stone-600">No additional job details yet.</p>
         ) : (
@@ -304,9 +298,14 @@ export default async function ApplicationDetailPage({
         )}
       </section>
 
-      <section className="card p-6">
-        <details open={!next}>
-          <summary className="text-lg font-medium text-stone-800">Timeline</summary>
+      <section className="border-t border-border pt-6">
+        <details className="group" open={!next}>
+          <summary className="flex cursor-pointer list-none items-center gap-2 font-display text-xl tracking-tight text-stone-800">
+            <span className="inline-block text-base text-stone-400 transition group-open:rotate-90">
+              ›
+            </span>
+            Timeline
+          </summary>
           {timeline.length === 0 ? (
             <p className="mt-3 text-sm text-stone-600">No history recorded yet.</p>
           ) : (
@@ -342,7 +341,7 @@ export default async function ApplicationDetailPage({
                   ? describeWhen(interview.scheduledAt, new Date(), timeZone)
                   : null;
                 return (
-                  <li key={interview.id} className="inset p-3.5">
+                  <li key={interview.id} className="border-t border-border py-3.5 first:border-0 first:pt-0">
                     <Link href={interviewHref(interview.id)} className="font-medium hover:underline">
                       {interviewTypeLabels[interview.type]}
                     </Link>
@@ -362,8 +361,11 @@ export default async function ApplicationDetailPage({
                     {interview.notes ? (
                       <p className="mt-2 whitespace-pre-wrap text-stone-700">{interview.notes}</p>
                     ) : null}
-                    <details className="mt-3">
-                      <summary className="cursor-pointer text-sm font-medium text-stone-700">
+                    <details className="group mt-3">
+                      <summary className="flex cursor-pointer list-none items-center gap-2 text-sm text-stone-600 hover:text-foreground">
+                        <span className="inline-block text-stone-400 transition group-open:rotate-90">
+                          ›
+                        </span>
                         View / edit
                       </summary>
                       <InterviewUpdateForm applicationId={id} interview={interview} />
@@ -387,7 +389,7 @@ export default async function ApplicationDetailPage({
           {contacts.contacts.length > 0 ? (
             <ul className="space-y-3 text-sm">
               {contacts.contacts.map((contact) => (
-                <li key={contact.id} className="inset p-3.5 text-sm">
+                <li key={contact.id} className="border-t border-border py-3.5 text-sm first:border-0 first:pt-0">
                   <p className="font-medium">{contact.name}</p>
                   {contact.role ? <p className="text-stone-600">{contact.role}</p> : null}
                   {contact.email ? (
@@ -430,7 +432,7 @@ export default async function ApplicationDetailPage({
           emptyText="Attach a cover letter or supporting file if you have one."
         >
           {otherDocuments.length > 0 ? (
-            <ul className="divide-y divide-border overflow-hidden rounded-[0.625rem] border border-border">
+            <ul className="divide-y divide-border border-y border-border">
               {otherDocuments.map((doc) => {
                 const kind = documentKindLabel(doc);
                 return (
@@ -448,6 +450,9 @@ export default async function ApplicationDetailPage({
           </AddSection>
         </Panel>
 
+      </div>
+
+      <div className="grid gap-8 lg:grid-cols-2">
         <Panel
           title="Follow-ups"
           empty={followUps.followUps.length === 0}
@@ -472,7 +477,7 @@ export default async function ApplicationDetailPage({
                       return (
                         <li
                           key={item.id}
-                          className={`inset p-3.5 ${
+                          className={`border-t border-border py-3.5 first:border-0 first:pt-0 ${
                             item.due.kind === "completed" ? "opacity-60" : ""
                           }`}
                         >
@@ -507,8 +512,11 @@ export default async function ApplicationDetailPage({
                             ) : null}
                           </div>
                           {item.due.kind !== "completed" ? (
-                            <details className="mt-3">
-                              <summary className="cursor-pointer text-sm font-medium text-stone-700">
+                            <details className="group mt-3">
+                              <summary className="flex cursor-pointer list-none items-center gap-2 text-sm text-stone-600 hover:text-foreground">
+                                <span className="inline-block text-stone-400 transition group-open:rotate-90">
+                                  ›
+                                </span>
                                 Edit
                               </summary>
                               <FollowUpUpdateForm applicationId={id} followUp={item} />
@@ -526,44 +534,50 @@ export default async function ApplicationDetailPage({
             <FollowUpForm applicationId={id} />
           </AddSection>
         </Panel>
-      </div>
 
-      <Panel
-        title="Notes"
-        empty={notes.notes.length === 0}
-        emptyTitle="No notes yet"
-        emptyText="Add a short note when something is worth remembering."
-      >
-        {notes.notes.length > 0 ? (
-          <ul className="space-y-3 text-sm">
-            {notes.notes.map((note) => (
-              <li key={note.id} className="inset p-3.5">
-                <p className="whitespace-pre-wrap">{note.content}</p>
-                <p className="mt-2 text-xs text-stone-500">
-                  {note.createdAt ? new Date(note.createdAt).toLocaleString() : ""}
-                </p>
-                <details className="mt-2">
-                  <summary className="cursor-pointer text-sm font-medium text-stone-700">
-                    Edit
-                  </summary>
-                  <NoteEditForm applicationId={id} note={note} />
-                </details>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-        <AddSection label="Add note">
-          <NoteForm applicationId={id} />
-        </AddSection>
-      </Panel>
+        <Panel
+          title="Notes"
+          empty={notes.notes.length === 0}
+          emptyTitle="No notes yet"
+          emptyText="Add a short note when something is worth remembering."
+        >
+          {notes.notes.length > 0 ? (
+            <ul className="space-y-3 text-sm">
+              {notes.notes.map((note) => (
+                <li key={note.id} className="border-t border-border py-3.5 first:border-0 first:pt-0">
+                  <p className="whitespace-pre-wrap">{note.content}</p>
+                  <p className="mt-2 text-xs text-stone-500">
+                    {note.createdAt ? new Date(note.createdAt).toLocaleString() : ""}
+                  </p>
+                  <details className="group mt-2">
+                    <summary className="flex cursor-pointer list-none items-center gap-2 text-sm text-stone-600 hover:text-foreground">
+                      <span className="inline-block text-stone-400 transition group-open:rotate-90">
+                        ›
+                      </span>
+                      Edit
+                    </summary>
+                    <NoteEditForm applicationId={id} note={note} />
+                  </details>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <AddSection label="Add note">
+            <NoteForm applicationId={id} />
+          </AddSection>
+        </Panel>
+      </div>
     </div>
   );
 }
 
 function AddSection({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <details>
-      <summary className="text-sm font-medium text-stone-700">{label}</summary>
+    <details className="group">
+      <summary className="flex cursor-pointer list-none items-center gap-2 text-sm text-stone-600 hover:text-foreground">
+        <span className="inline-block text-stone-400 transition group-open:rotate-90">›</span>
+        {label}
+      </summary>
       <div className="mt-3">{children}</div>
     </details>
   );
@@ -583,8 +597,8 @@ function Panel({
   children: ReactNode;
 }) {
   return (
-    <section className="card space-y-4 p-6">
-      <h2 className="text-lg font-medium">{title}</h2>
+    <section className="space-y-4 border-t border-border pt-6">
+      <h2 className="font-display text-xl tracking-tight">{title}</h2>
       {empty ? (
         <div>
           <p className="text-sm text-stone-700">{emptyTitle}</p>

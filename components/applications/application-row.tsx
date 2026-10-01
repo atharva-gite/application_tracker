@@ -19,14 +19,14 @@ export function ApplicationRow({
   const cells = Children.toArray(children);
 
   return (
-    <tr className="border-b border-border last:border-0 hover:bg-[#f7f6f2]">
+    <tr className="border-b border-border last:border-0 hover:bg-[var(--background)]">
       {cells.map((cell, index) => (
         <td key={index} className="p-0">
           <Link
             href={href}
             aria-label={index === 0 ? label : undefined}
             tabIndex={index === 0 ? 0 : -1}
-            className="block px-4 py-3 text-inherit no-underline outline-none focus-visible:bg-[#f7f6f2]"
+            className="block px-4 py-3 text-inherit no-underline outline-none focus-visible:bg-[var(--background)]"
           >
             {cell}
           </Link>

@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { ActivityList } from "@/components/activity-list";
 import { CompleteFollowUpButton } from "@/components/applications/complete-follow-up-button";
+import { PageHeader } from "@/components/layout/page-header";
 import { isDashboardFollowUp } from "@/lib/application-detail";
 import { buildAttentionItems, isStaleApplication } from "@/lib/attention";
 import { followUpTypeLabels, statusLabels } from "@/lib/labels";
@@ -12,10 +13,10 @@ import { getDashboard } from "@/server/services/dashboard-service";
 export const metadata = { title: "Dashboard" };
 
 const kindStyles = {
-  interview: "bg-violet-50 text-violet-800",
-  deadline: "bg-amber-50 text-amber-800",
-  follow_up: "bg-blue-50 text-blue-800",
-  stale: "bg-stone-100 text-stone-800",
+  interview: "border-accent/20 bg-[var(--accent-soft)] text-accent",
+  deadline: "border-border bg-background text-stone-700",
+  follow_up: "border-border bg-[#f7f6f2] text-stone-800",
+  stale: "border-border bg-background text-stone-500",
 } as const;
 
 const kindLabels = {
@@ -83,28 +84,21 @@ export default async function DashboardPage() {
   const firstName = user.name?.trim().split(/\s+/)[0];
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            Welcome{firstName ? `, ${firstName}` : ""}
-          </h1>
-          <p className="mt-1 text-sm text-stone-600">
-            {emptySearch
-              ? "Start with one role. Folio will tell you what needs attention next."
-              : "What needs attention in your job search."}
-          </p>
-        </div>
-        <Link href="/applications/new" className="btn-primary">
-          Add application
-        </Link>
-      </div>
+    <div className="mx-auto max-w-5xl space-y-10">
+      <PageHeader
+        title={<>Welcome{firstName ? `, ${firstName}` : ""}</>}
+        description={
+          emptySearch
+            ? "Start with one role. Folio will tell you what needs attention next."
+            : "What needs attention in your job search."
+        }
+      />
 
-      <section className="card p-6 sm:p-7">
-        <h2 className="font-medium">Needs attention</h2>
+      <section>
+        <h2 className="text-sm font-medium text-stone-500">Needs attention</h2>
         {emptySearch ? (
-          <div className="inset mt-4 px-4 py-8 text-center">
-            <p className="text-sm text-stone-600">
+          <div className="mt-4 max-w-lg">
+            <p className="text-sm leading-6 text-stone-600">
               Add a company and role to start tracking interviews, deadlines, and
               follow-ups in one place.
             </p>
@@ -113,20 +107,20 @@ export default async function DashboardPage() {
             </Link>
           </div>
         ) : attention.length === 0 ? (
-          <p className="mt-3 text-sm text-stone-600">
+          <p className="mt-3 text-sm leading-6 text-stone-600">
             Nothing is due, and no application has gone quiet. Schedule an interview
             or follow-up when you have a next step.
           </p>
         ) : (
-          <ul className="mt-4 space-y-2 text-sm">
+          <ul className="mt-3 divide-y divide-border border-y border-border">
             {attention.map((item) => (
               <li
                 key={item.id}
-                className="inset flex items-start justify-between gap-3 px-4 py-3"
+                className="flex items-start justify-between gap-3 py-3.5 text-sm"
               >
                 <div>
                   <span
-                    className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${kindStyles[item.kind]}`}
+                    className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-medium ${kindStyles[item.kind]}`}
                   >
                     {kindLabels[item.kind]}
                   </span>
@@ -156,38 +150,37 @@ export default async function DashboardPage() {
       </section>
 
       {!emptySearch ? (
-        <div className="grid gap-3 sm:grid-cols-3">
-          <Metric href="/applications" label="Active" value={data.metrics.active} />
-          <Metric href="/interviews" label="Interviews" value={data.metrics.interviews} />
-          <Metric href="/applications?status=OFFER" label="Offers" value={data.metrics.offers} />
-        </div>
+        <section className="border-y border-border py-6">
+          <div className="flex flex-wrap gap-x-10 gap-y-4">
+            <Metric href="/applications" label="Active" value={data.metrics.active} />
+            <Metric href="/interviews" label="Interviews" value={data.metrics.interviews} />
+            <Metric href="/applications?status=OFFER" label="Offers" value={data.metrics.offers} />
+          </div>
+          <div className="mt-6 flex items-baseline justify-between gap-3">
+            <h2 className="text-sm font-medium text-stone-500">Stages</h2>
+            <Link href="/applications?view=board" className="text-sm font-medium text-accent">
+              Open board
+            </Link>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-x-6 gap-y-3">
+            {Object.entries(data.pipeline).map(([status, count]) => (
+              <Link
+                key={status}
+                href={`/applications?status=${status}&view=board`}
+                className="min-w-[4.5rem]"
+              >
+                <p className="text-lg font-semibold tracking-tight">{count}</p>
+                <p className="mt-0.5 text-xs text-stone-500">
+                  {statusLabels[status as keyof typeof statusLabels]}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </section>
       ) : null}
 
-      <section className="card p-6 sm:p-7">
-        <div className="flex items-center justify-between">
-          <h2 className="font-medium">Stages</h2>
-          <Link href="/applications?view=board" className="text-sm font-medium text-accent">
-            Open board
-          </Link>
-        </div>
-        <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
-          {Object.entries(data.pipeline).map(([status, count]) => (
-            <Link
-              key={status}
-              href={`/applications?status=${status}&view=board`}
-              className="inset p-3 text-center transition hover:bg-white"
-            >
-              <p className="text-xl font-semibold">{count}</p>
-              <p className="mt-1 text-xs text-stone-500">
-                {statusLabels[status as keyof typeof statusLabels]}
-              </p>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="card p-6 sm:p-7">
-        <h2 className="font-medium">Recent activity</h2>
+      <section>
+        <h2 className="text-sm font-medium text-stone-500">Recent activity</h2>
         <ActivityList events={data.activity} />
       </section>
     </div>
@@ -204,9 +197,9 @@ function Metric({
   href: string;
 }) {
   return (
-    <Link href={href} className="card p-5">
+    <Link href={href} className="min-w-[5rem]">
       <p className="text-sm text-stone-500">{label}</p>
-      <p className="mt-1 text-2xl font-semibold">{value}</p>
+      <p className="mt-0.5 text-2xl font-semibold tracking-tight">{value}</p>
     </Link>
   );
 }

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ApplicationBoard } from "@/components/applications/application-board";
 import { ApplicationFilters } from "@/components/applications/application-filters";
 import { ApplicationRow } from "@/components/applications/application-row";
+import { PageHeader } from "@/components/layout/page-header";
 import { Pagination } from "@/components/pagination";
 import { StatusBadge } from "@/components/status-badge";
 import {
@@ -74,22 +75,23 @@ export default async function ApplicationsPage({
 
   return (
     <div className={`mx-auto space-y-8 ${showBoard ? "max-w-none" : "max-w-6xl"}`}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Applications</h1>
-          <p className="mt-2 text-sm text-stone-600">
+      <PageHeader
+        title="Applications"
+        description={
+          <>
             {total} {total === 1 ? "application" : "applications"}
             {filtered
               ? total === 1
                 ? " matches your filters."
                 : " match your filters."
               : " in your pipeline."}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+          </>
+        }
+        actions={
+          <>
           <details className="relative sm:hidden">
             <summary className="btn-secondary list-none">More</summary>
-            <div className="absolute right-0 z-20 mt-2 flex min-w-[10rem] flex-col gap-1 rounded-xl border border-border bg-white p-1.5 shadow-sm">
+            <div className="absolute right-0 z-20 mt-2 flex min-w-[10rem] flex-col gap-1 border border-border bg-background p-1.5">
               <form action="/api/applications/export" method="get">
                 <button type="submit" className="w-full rounded-lg px-3 py-2 text-left text-sm">
                   Export CSV
@@ -111,15 +113,16 @@ export default async function ApplicationsPage({
           <Link href="/applications/new" className="btn-primary">
             Add application
           </Link>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <ApplicationFilters query={query} companies={companies} />
 
       {applications.length === 0 && !showBoard ? (
         filtered ? (
-          <section className="card border-dashed p-8">
-            <h2 className="text-lg font-medium">No applications match your filters.</h2>
+          <section className="border border-dashed border-border px-6 py-8">
+            <h2 className="font-display text-xl tracking-tight">No applications match your filters.</h2>
             <p className="mt-2 max-w-lg text-sm leading-6 text-stone-600">
               Try a different search, stage, or deadline, or clear the current filters.
             </p>
@@ -128,8 +131,8 @@ export default async function ApplicationsPage({
             </Link>
           </section>
         ) : (
-          <section className="card border-dashed p-8">
-            <h2 className="text-lg font-medium">No applications yet</h2>
+          <section className="border border-dashed border-border px-6 py-8">
+            <h2 className="font-display text-xl tracking-tight">No applications yet</h2>
             <p className="mt-2 max-w-lg text-sm leading-6 text-stone-600">
               Add your first application to start tracking your job search.
             </p>
@@ -149,7 +152,7 @@ export default async function ApplicationsPage({
           applications={applications}
         />
       ) : (
-        <div className="card overflow-hidden">
+        <div className="overflow-hidden border-y border-border">
           <div className="overflow-x-auto">
             <table className="hidden w-full min-w-[40rem] text-left text-sm sm:table">
               <thead className="border-b border-border text-stone-500">

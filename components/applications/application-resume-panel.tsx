@@ -64,12 +64,12 @@ export function ApplicationResumePanel({
   }
 
   return (
-    <section className="card space-y-4 p-6">
-      <h2 className="text-lg font-medium">Resume</h2>
+    <section className="space-y-4 border-t border-border pt-6">
+      <h2 className="font-display text-xl tracking-tight">Resume</h2>
       {error ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}
 
       {resume && !editing ? (
-        <div className="inset p-4">
+        <div>
           <p className="font-medium">{resume.name}</p>
           <p className="mt-1 text-sm text-stone-500">{format ?? "Document"}</p>
           <div className="mt-4 flex flex-wrap gap-2">

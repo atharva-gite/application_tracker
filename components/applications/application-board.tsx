@@ -89,7 +89,7 @@ export function ApplicationBoard({
       {error ? (
         <div
           role="alert"
-          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-white px-4 py-3 text-sm"
+          className="flex flex-wrap items-center justify-between gap-3 border-l-[3px] border-[var(--danger)] pl-3 text-sm"
         >
           <p className="text-stone-700">{error}</p>
           {retry ? (
@@ -132,10 +132,10 @@ export function ApplicationBoard({
                 }
                 void moveCard(payload.id, column.status);
               }}
-              className={`flex w-[16.5rem] shrink-0 flex-col rounded-xl border p-2.5 ${
+              className={`flex w-[16.5rem] shrink-0 flex-col p-2.5 ${
                 overStatus === column.status
-                  ? "border-accent/30 bg-[var(--accent-soft)]"
-                  : "border-border bg-[#f7f6f2]"
+                  ? "bg-[var(--accent-soft)]"
+                  : "inset"
               }`}
             >
               <header className="mb-3 px-1">
@@ -199,7 +199,6 @@ function BoardCard({
     application.lastActivityAt ??
     application.updatedAt ??
     application.createdAt;
-  const extras = [application.location, application.source].filter(Boolean);
 
   function handleDragStart(event: DragEvent<HTMLDivElement>) {
     onDragBegin();
@@ -216,7 +215,7 @@ function BoardCard({
       onDragStart={handleDragStart}
       onDragEnd={onDragEnd}
       aria-disabled={pending}
-      className={`rounded-lg border border-border bg-white p-3 ${
+      className={`border border-border bg-background p-3 ${
         pending ? "pointer-events-none opacity-60" : "hover:border-stone-300"
       }`}
     >
@@ -250,17 +249,10 @@ function BoardCard({
         </select>
       </label>
       {due.kind !== "none" ? (
-        <p className={`mt-2 text-xs ${deadlineToneClass(due.kind)}`}>
-          Deadline: {due.label}
-        </p>
+        <p className={`mt-2 text-xs ${deadlineToneClass(due.kind)}`}>{due.label}</p>
       ) : null}
       {activity ? (
-        <p className="mt-0.5 text-xs text-stone-500">
-          Last activity: {describePast(activity)}
-        </p>
-      ) : null}
-      {extras.length > 0 ? (
-        <p className="mt-1 text-xs text-stone-400">{extras.join(" · ")}</p>
+        <p className="mt-0.5 text-xs text-stone-500">{describePast(activity)}</p>
       ) : null}
     </div>
   );

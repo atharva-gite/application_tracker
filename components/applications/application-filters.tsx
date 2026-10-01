@@ -36,7 +36,7 @@ export function ApplicationFilters({
   const filters = applicationFilterQuery(query, view);
 
   return (
-    <form method="get" action="/applications" className="card space-y-4 p-5">
+    <form method="get" action="/applications" className="space-y-4 border-y border-border py-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <input
           name="q"
@@ -56,23 +56,23 @@ export function ApplicationFilters({
         <button type="submit" className="btn-secondary">
           Apply filters
         </button>
-        <div className="flex rounded-xl bg-stone-100 p-1">
+        <div className="flex gap-1">
           <Link
             href={withQuery("/applications", { ...filters, view: "list", page: 1 })}
-            className={`rounded-lg px-3 py-1.5 text-sm ${view !== "board" ? "bg-white font-medium shadow-sm" : "text-stone-600"}`}
+            className={`chip ${view !== "board" ? "border-accent/20 bg-[var(--accent-soft)] font-medium text-accent" : "text-stone-600"}`}
           >
             List
           </Link>
           <Link
             href={withQuery("/applications", { ...filters, view: "board", page: 1 })}
-            className={`rounded-lg px-3 py-1.5 text-sm ${view === "board" ? "bg-white font-medium shadow-sm" : "text-stone-600"}`}
+            className={`chip ${view === "board" ? "border-accent/20 bg-[var(--accent-soft)] font-medium text-accent" : "text-stone-600"}`}
           >
             Board
           </Link>
         </div>
       </div>
       <details className="text-sm" open={extraOpen}>
-        <summary className="cursor-pointer font-medium text-stone-700">More filters</summary>
+        <summary className="cursor-pointer text-sm text-stone-600 hover:text-foreground">More filters</summary>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <select name="companyId" defaultValue={query.companyId ?? ""} className="input" aria-label="Company">
             <option value="">All companies</option>
