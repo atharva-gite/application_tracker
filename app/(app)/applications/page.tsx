@@ -110,7 +110,7 @@ export default async function ApplicationsPage({
           <Link href="/applications/import" className="btn-secondary hidden sm:inline-flex">
             Import CSV
           </Link>
-          <Link href="/applications/new" className="btn-primary">
+          <Link href="/applications/new" className="btn-primary hidden lg:inline-flex">
             Add application
           </Link>
           </>

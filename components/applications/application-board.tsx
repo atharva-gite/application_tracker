@@ -139,9 +139,7 @@ export function ApplicationBoard({
               }`}
             >
               <header className="mb-3 px-1">
-                <p className="text-xs font-semibold tracking-[0.14em] text-stone-500">
-                  {column.label.toUpperCase()}
-                </p>
+                <p className="text-sm font-medium text-stone-700">{column.label}</p>
                 <p className="mt-1 text-xs text-stone-500">
                   {columnCountLabel(column.count)}
                 </p>

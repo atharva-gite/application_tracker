@@ -65,7 +65,7 @@ export function ApplicationResumePanel({
 
   return (
     <section className="space-y-4 border-t border-border pt-6">
-      <h2 className="font-display text-xl tracking-tight">Resume</h2>
+      <h2 className="text-sm font-medium text-stone-500">Resume</h2>
       {error ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}
 
       {resume && !editing ? (

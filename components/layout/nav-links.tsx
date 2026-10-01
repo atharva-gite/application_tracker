@@ -35,23 +35,29 @@ export function NavLinks({ variant }: { variant: "side" | "mobile" }) {
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
   );
 
+  const links = items.map((item) => (
+    <NavItem key={item.href} item={item} pathname={pathname} variant={variant} />
+  ));
+
   return (
     <>
-      {items.map((item) => (
-        <NavItem key={item.href} item={item} pathname={pathname} variant={variant} />
-      ))}
+      {variant === "mobile" ? (
+        <div className="flex min-w-0 flex-1 gap-4 overflow-x-auto">{links}</div>
+      ) : (
+        links
+      )}
       {overflow.length > 0 ? (
         <details className="relative">
           <summary
-            className={`cursor-pointer list-none whitespace-nowrap rounded-full px-3 py-1.5 text-sm ${
+            className={`shrink-0 cursor-pointer list-none whitespace-nowrap border-b-2 pb-1 text-sm ${
               overflowActive
-                ? "bg-accent text-white"
-                : "border border-border bg-white text-stone-700"
+                ? "border-accent font-medium text-accent"
+                : "border-transparent text-stone-600"
             }`}
           >
             More
           </summary>
-          <div className="absolute left-0 z-20 mt-2 flex min-w-[10rem] flex-col gap-1 rounded-xl border border-border bg-white p-1.5 shadow-sm">
+          <div className="absolute right-0 z-20 mt-2 flex min-w-[10rem] flex-col gap-0.5 border border-border bg-background p-1.5">
             {overflow.map((item) => (
               <NavItem key={item.href} item={item} pathname={pathname} variant="overflow" />
             ))}
@@ -109,8 +115,8 @@ function NavItem({
     <Link
       href={item.href}
       aria-current={active ? "page" : undefined}
-      className={`whitespace-nowrap rounded-full px-3 py-1.5 text-sm ${
-        active ? "bg-accent text-white" : "border border-border bg-white text-stone-700"
+      className={`shrink-0 whitespace-nowrap border-b-2 pb-1 text-sm ${
+        active ? "border-accent font-medium text-accent" : "border-transparent text-stone-600"
       }`}
     >
       {item.label}

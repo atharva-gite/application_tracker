@@ -14,10 +14,10 @@ export function AppShell({
 }) {
   return (
     <div className="min-h-full lg:grid lg:grid-cols-[15.5rem_1fr]">
-      <aside className="hidden border-r border-border bg-surface lg:sticky lg:top-0 lg:flex lg:h-svh lg:flex-col lg:justify-between">
+      <aside className="hidden border-r border-border bg-background lg:sticky lg:top-0 lg:flex lg:h-svh lg:flex-col lg:justify-between">
         <div className="px-4 pt-5">
           <div className="px-2">
-            <Logo href="/dashboard" />
+            <Logo href="/dashboard" mark="plain" />
           </div>
           <Link href="/applications/new" className="btn-primary mt-6 w-full">
             Add application
@@ -47,15 +47,12 @@ export function AppShell({
       </aside>
 
       <div className="flex min-h-full min-w-0 flex-col">
-        <header className="sticky top-0 z-10 border-b border-border bg-background/90 px-4 py-3 backdrop-blur lg:hidden">
+        <header className="sticky top-0 z-10 border-b border-border bg-background px-4 py-3 lg:hidden">
           <div className="flex items-center justify-between gap-3">
-            <Logo href="/dashboard" size="sm" />
-            <div className="flex items-center gap-2">
+            <Logo href="/dashboard" size="sm" mark="plain" />
+            <div className="flex items-center gap-3">
               <Link href="/applications/new" className="btn-primary px-3 py-1.5 text-xs">
                 Add
-              </Link>
-              <Link href="/settings" className="text-sm text-stone-600">
-                Settings
               </Link>
               <form action={logoutAction}>
                 <button type="submit" className="text-sm text-stone-600">
@@ -64,7 +61,7 @@ export function AppShell({
               </form>
             </div>
           </div>
-          <nav className="mt-3 flex gap-2 overflow-x-auto pb-1 text-sm">
+          <nav className="mt-3 flex items-center gap-4 text-sm">
             <NavLinks variant="mobile" />
           </nav>
         </header>

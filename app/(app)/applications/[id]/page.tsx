@@ -228,16 +228,18 @@ export default async function ApplicationDetailPage({
       </div>
 
       {next ? (
-        <p className="text-sm text-stone-600">
+        <p className="border-l-[3px] border-accent pl-3 text-sm leading-6 text-stone-700">
           Next:{" "}
           <Link
             href={next.href}
-            className={next.relative.overdue ? "text-[var(--danger)] hover:underline" : "font-medium hover:underline"}
+            className={next.relative.overdue ? "text-[var(--danger)] hover:underline" : "font-medium text-foreground hover:underline"}
           >
             {next.title}
           </Link>
-          {" · "}
-          {next.relative.overdue ? `Overdue · ${next.relative.label}` : next.relative.label}
+          <span className={next.relative.overdue ? "text-[var(--danger)]" : "text-stone-500"}>
+            {" · "}
+            {next.relative.overdue ? `Overdue · ${next.relative.label}` : next.relative.label}
+          </span>
         </p>
       ) : null}
 
@@ -260,16 +262,14 @@ export default async function ApplicationDetailPage({
       ) : null}
 
       <section className="border-t border-border pt-6">
-        <h2 className="font-display text-xl tracking-tight">Job information</h2>
+        <h2 className="text-sm font-medium text-stone-500">Job information</h2>
         {jobFields.length === 0 && !application.description ? (
           <p className="mt-3 text-sm text-stone-600">No additional job details yet.</p>
         ) : (
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             {jobFields.map((field) => (
               <div key={field.label} className="min-w-0">
-                <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
-                  {field.label}
-                </p>
+                <p className="text-[0.8125rem] text-stone-500">{field.label}</p>
                 {field.href ? (
                   <a
                     href={field.href}
@@ -286,9 +286,7 @@ export default async function ApplicationDetailPage({
             ))}
             {application.description ? (
               <div className="sm:col-span-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
-                  Description
-                </p>
+                <p className="text-[0.8125rem] text-stone-500">Description</p>
                 <p className="mt-1 whitespace-pre-wrap text-sm text-stone-700">
                   {application.description}
                 </p>
@@ -300,7 +298,7 @@ export default async function ApplicationDetailPage({
 
       <section className="border-t border-border pt-6">
         <details className="group" open={!next}>
-          <summary className="flex cursor-pointer list-none items-center gap-2 font-display text-xl tracking-tight text-stone-800">
+          <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-medium text-stone-500">
             <span className="inline-block text-base text-stone-400 transition group-open:rotate-90">
               ›
             </span>
@@ -598,7 +596,7 @@ function Panel({
 }) {
   return (
     <section className="space-y-4 border-t border-border pt-6">
-      <h2 className="font-display text-xl tracking-tight">{title}</h2>
+      <h2 className="text-sm font-medium text-stone-500">{title}</h2>
       {empty ? (
         <div>
           <p className="text-sm text-stone-700">{emptyTitle}</p>

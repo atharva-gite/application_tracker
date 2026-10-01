@@ -21,7 +21,7 @@ export function PageHeader({
           {title}
         </h1>
         {description ? (
-          <div className="mt-2 max-w-xl text-[0.9375rem] leading-6 text-stone-600">
+          <div className="mt-2 max-w-xl font-display text-[1.05rem] italic leading-6 text-[#58564f]">
             {description}
           </div>
         ) : null}
