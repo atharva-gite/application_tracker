@@ -5,7 +5,7 @@ import { requireUser } from "@/server/authorization/require-user";
 export async function POST(request: Request) {
   return handleApi(request, async () => {
     await requireUser();
-    await signOut({ redirect: false });
+    await signOut();
     return json({ success: true });
   });
 }
