@@ -57,7 +57,7 @@ npx prisma migrate deploy
 npm run db:seed
 ```
 
-This loads `demo@folio.local` / `password12` with a mixed pipeline, an upcoming
+This loads `demo@folio.app` / `password12` with a mixed pipeline, an upcoming
 interview, an overdue follow-up, and a stalled application. The seed refuses
 to run when `NODE_ENV=production`.
 

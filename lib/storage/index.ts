@@ -1,4 +1,3 @@
-import { AppError } from "@/lib/errors";
 import type { StorageAdapter, StorageDriver } from "@/lib/storage/types";
 
 export { assertStorageKey } from "@/lib/storage/keys";
@@ -22,10 +21,8 @@ async function getAdapter(): Promise<StorageAdapter> {
     return s3Storage;
   }
   if (process.env.VERCEL === "1") {
-    throw new AppError(
-      "INTERNAL_ERROR",
-      "File storage is not configured.",
-    );
+    const { bundledStorage } = await import("@/lib/storage/bundled");
+    return bundledStorage;
   }
   const { localStorage } = await import("@/lib/storage/local");
   return localStorage;
