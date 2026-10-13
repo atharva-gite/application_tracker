@@ -1,55 +1,106 @@
-import NextAuth from "next-auth";
-import Credentials from "next-auth/providers/credentials";
+import { createNeonAuth } from "@neondatabase/auth/next/server";
+import bcrypt from "bcryptjs";
 
-import { verifyCredentials } from "@/server/services/auth-service";
-import { loginSchema } from "@/lib/validation/auth";
+import { userRepository } from "@/server/repositories/user-repository";
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
-  trustHost: true,
-  session: {
-    strategy: "jwt",
-    maxAge: 60 * 60 * 24 * 14,
-  },
-  pages: {
-    signIn: "/login",
-  },
-  providers: [
-    Credentials({
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(credentials) {
-        const parsed = loginSchema.safeParse(credentials);
-        if (!parsed.success) {
-          return null;
-        }
-
-        const user = await verifyCredentials(parsed.data);
-        if (!user) {
-          return null;
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        };
-      },
-    }),
-  ],
-  callbacks: {
-    jwt({ token, user }) {
-      if (user?.id) {
-        token.sub = user.id;
-      }
-      return token;
-    },
-    session({ session, token }) {
-      if (session.user && token.sub) {
-        session.user.id = token.sub;
-      }
-      return session;
-    },
+export const neonAuth = createNeonAuth({
+  baseUrl: process.env.NEON_AUTH_BASE_URL!,
+  cookies: {
+    secret: process.env.NEON_AUTH_COOKIE_SECRET!,
   },
 });
+
+export type SessionUser = {
+  id: string;
+  email: string;
+  name: string | null;
+};
+
+export async function auth(): Promise<{ user: SessionUser } | null> {
+  const { data: session } = await neonAuth.getSession();
+  const email = session?.user?.email;
+  if (!email) {
+    return null;
+  }
+
+  const local = await ensureLocalUser({
+    email,
+    name: session.user.name ?? email,
+  });
+
+  return {
+    user: {
+      id: local.id,
+      email: local.email,
+      name: local.name,
+    },
+  };
+}
+
+function authCallbackUrl() {
+  return process.env.AUTH_URL ?? "http://localhost:3000";
+}
+
+export async function signInWithPassword(email: string, password: string) {
+  const { data, error } = await neonAuth.signIn.email({
+    email,
+    password,
+    callbackURL: authCallbackUrl(),
+  });
+  const signedIn = data?.user;
+  if (error || !signedIn?.email) {
+    return null;
+  }
+
+  const local = await ensureLocalUser({
+    email: signedIn.email,
+    name: signedIn.name ?? signedIn.email,
+  });
+  return {
+    user: {
+      id: local.id,
+      email: local.email,
+      name: local.name,
+    },
+  };
+}
+
+export async function signUpWithPassword(input: {
+  email: string;
+  password: string;
+  name: string;
+}) {
+  const { error } = await neonAuth.signUp.email({
+    email: input.email,
+    password: input.password,
+    name: input.name,
+    callbackURL: authCallbackUrl(),
+  });
+  if (error) {
+    return { error: error.message ?? "Could not create the account." };
+  }
+  const session = await signInWithPassword(input.email, input.password);
+  return { error: session ? undefined : "Account created, but sign-in failed." };
+}
+
+export async function signOut() {
+  await neonAuth.signOut();
+}
+
+async function ensureLocalUser(input: { email: string; name: string }) {
+  const existing = await userRepository.findByEmail(input.email);
+  if (existing) {
+    return existing;
+  }
+
+  const passwordHash = await bcrypt.hash(
+    `neon-auth:${input.email}:${Date.now()}`,
+    12,
+  );
+  return userRepository.create({
+    email: input.email,
+    name: input.name,
+    passwordHash,
+    timezone: "UTC",
+  });
+}

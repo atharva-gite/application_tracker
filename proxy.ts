@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
+
+import { neonAuth } from "@/lib/auth";
 
 const APP_PREFIXES = [
   "/dashboard",
@@ -16,10 +17,8 @@ const AUTH_PAGES = ["/login", "/register", "/forgot-password", "/reset-password"
 
 export async function proxy(request: NextRequest) {
   const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
-  const token = await getToken({
-    req: request,
-    secret: process.env.AUTH_SECRET,
-  });
+  const { data: session } = await neonAuth.getSession();
+  const token = session?.user;
   const { pathname } = request.nextUrl;
   const isAppRoute = APP_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),

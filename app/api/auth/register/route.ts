@@ -1,8 +1,8 @@
-import { signIn } from "@/lib/auth";
+import { signUpWithPassword } from "@/lib/auth";
 import { getClientKey, handleApi, json, parseJsonBody } from "@/lib/api";
 import { assertRateLimit } from "@/lib/rate-limit";
+import { AppError } from "@/lib/errors";
 import { parseSchema, registerSchema } from "@/lib/validation/auth";
-import { registerUser } from "@/server/services/auth-service";
 
 export async function POST(request: Request) {
   return handleApi(request, async () => {
@@ -13,14 +13,15 @@ export async function POST(request: Request) {
     });
 
     const input = parseSchema(registerSchema, await parseJsonBody(request));
-    const user = await registerUser(input);
-
-    await signIn("credentials", {
+    const signedUp = await signUpWithPassword({
       email: input.email,
       password: input.password,
-      redirect: false,
+      name: input.name,
     });
+    if (signedUp.error) {
+      throw new AppError("CONFLICT", signedUp.error);
+    }
 
-    return json({ user }, 201);
+    return json({ ok: true }, 201);
   });
 }

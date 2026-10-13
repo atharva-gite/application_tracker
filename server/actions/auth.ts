@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { signIn, signOut } from "@/lib/auth";
+import { signInWithPassword, signOut, signUpWithPassword } from "@/lib/auth";
 import { AppError } from "@/lib/errors";
 import {
   forgotPasswordSchema,
@@ -14,7 +14,6 @@ import {
 } from "@/lib/validation/auth";
 import { requireUser } from "@/server/authorization/require-user";
 import {
-  registerUser,
   requestPasswordReset,
   resetPassword,
   updateProfile,
@@ -54,12 +53,14 @@ export async function registerAction(
       password: formData.get("password"),
       timezone: formData.get("timezone"),
     });
-    await registerUser(input);
-    await signIn("credentials", {
+    const signedUp = await signUpWithPassword({
       email: input.email,
       password: input.password,
-      redirect: false,
+      name: input.name,
     });
+    if (signedUp.error) {
+      return { message: signedUp.error };
+    }
   } catch (error) {
     return toFormState(error);
   }
@@ -94,11 +95,10 @@ export async function loginAction(
       email: formData.get("email"),
       password: formData.get("password"),
     });
-    await signIn("credentials", {
-      email: input.email,
-      password: input.password,
-      redirect: false,
-    });
+    const session = await signInWithPassword(input.email, input.password);
+    if (!session) {
+      return { message: "Invalid email or password." };
+    }
   } catch (error) {
     if (error instanceof AppError) {
       return toFormState(error);
@@ -112,7 +112,7 @@ export async function loginAction(
 }
 
 export async function logoutAction() {
-  await signOut({ redirect: false });
+  await signOut();
   redirect("/");
 }
 
