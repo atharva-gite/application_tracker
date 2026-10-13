@@ -6,6 +6,10 @@ const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  outputFileTracingIncludes: {
+    "/api/documents/[id]/download": ["./demo-files/**/*"],
+    "/api/documents/[id]/view": ["./demo-files/**/*"],
+  },
   turbopack: {
     root: projectRoot,
   },

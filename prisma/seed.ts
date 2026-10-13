@@ -1,9 +1,12 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+
 import bcrypt from "bcryptjs";
 
 import { prisma } from "@/lib/prisma";
 import { PRODUCT_EVENTS } from "@/lib/product-events";
 
-export const DEMO_EMAIL = "demo@folio.local";
+export const DEMO_EMAIL = "demo@folio.app";
 export const DEMO_PASSWORD = "password12";
 
 export function assertDevSeed() {
@@ -225,6 +228,27 @@ async function main() {
         createdAt: daysAgo(now, 1),
       },
     ],
+  });
+
+  const resumeBytes = await readFile(
+    path.join(process.cwd(), "demo-files", "resumes", "Atharva-Gite-CV.pdf"),
+  );
+  const resume = await prisma.document.create({
+    data: {
+      userId: user.id,
+      name: "Atharva Gite CV",
+      type: "RESUME",
+      filename: "Atharva-Gite-CV.pdf",
+      mimeType: "application/pdf",
+      fileSize: resumeBytes.length,
+      storageKey: "resumes/Atharva-Gite-CV.pdf",
+    },
+  });
+  await prisma.applicationDocument.createMany({
+    data: [offer, interviewApp, stalled, saved, assessment].map((application) => ({
+      applicationId: application.id,
+      documentId: resume.id,
+    })),
   });
 
   console.log(`Seeded ${DEMO_EMAIL} / ${DEMO_PASSWORD}`);
